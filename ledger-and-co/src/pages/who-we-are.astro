@@ -1,0 +1,320 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Button from '../components/Button.astro';
+import ScrollReveal from '../components/ScrollReveal.astro';
+import PlaceholderImage from '../components/PlaceholderImage.astro';
+
+// Seniority, from the schema's `order`. Filename order would put whoever joined
+// most recently at the top and hand them the lead slot below.
+const team = (await getCollection('team')).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+
+// The first entry gets the wide feature row; everyone else goes through the
+// slot cycle. Destructuring survives an empty collection — `lead` is simply
+// undefined, which the guards below already handle.
+const [lead, ...bench] = team;
+
+/**
+ * The asymmetric grid, as data.
+ *
+ * Five hand-written special cases would break the moment someone adds a sixth
+ * person, so the irregularity is a repeating cycle instead: four slots that
+ * differ in width, in crop and in how far down the row they start, applied
+ * modulo the bench length. Add or remove a team member and the page stays
+ * uneven rather than collapsing back into a tidy 2×2.
+ *
+ * On the 12-column grid the cycle places two people per row — one wide, one
+ * narrow — and indents the second row so the columns never line up with the
+ * first. Below `lg` the column classes drop out and it is a plain two-up grid;
+ * the differing aspect ratios are what keep the cards unequal down there, which
+ * is why the crop varies per slot rather than being fixed at 4:5 throughout.
+ */
+const SLOTS = [
+  // Wide, tall, flush with the left margin — the anchor of its row.
+  { column: 'lg:col-span-5 lg:col-start-1', offset: '', width: 640, height: 800, size: 'text-2xl' },
+  // Narrow and square, dropped a long way down so the row has no shared baseline.
+  { column: 'lg:col-span-4 lg:col-start-7', offset: 'lg:mt-28', width: 640, height: 640, size: 'text-xl' },
+  // Indented one column, so row two starts somewhere row one did not.
+  { column: 'lg:col-span-4 lg:col-start-2', offset: 'lg:mt-12', width: 600, height: 750, size: 'text-xl' },
+  // The only landscape crop on the page.
+  { column: 'lg:col-span-5 lg:col-start-8', offset: 'lg:mt-4', width: 800, height: 600, size: 'text-2xl' },
+];
+
+// Spelt out, because "5 people you will deal with directly" sets a numeral in a
+// sentence, which the house style reserves for figures worth comparing. Falls
+// back to the digits past ten — a bench that size needs a different heading
+// anyway, not a longer word.
+const NUMBER_WORDS = [
+  'No', 'One', 'Two', 'Three', 'Four', 'Five',
+  'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+];
+const headcount = NUMBER_WORDS[team.length] ?? String(team.length);
+
+/*
+ * PLACEHOLDER firm particulars — the same status as the footer's address block.
+ * These are the numbers the positioning copy beside them depends on, so they
+ * live together and get checked together before launch.
+ */
+const figures = [
+  { label: 'Established', value: '1998' },
+  { label: 'People', value: '26' },
+  { label: 'Partners and directors', value: '5' },
+  { label: 'Offices', value: 'London, Manchester' },
+  { label: 'Client companies', value: '180' },
+  { label: 'Typical client turnover', value: '£500k–£20m' },
+];
+---
+
+<BaseLayout
+  title="Who we are — Ledger & Co."
+  description="A twenty-six person chartered practice in London and Manchester, audit-registered since 2003, working with owner-managed businesses turning over £500k to £20m."
+>
+  {/* ---------------------------------------------------------------------
+      1. Page head. Same shape as /services — title left, standfirst hung in
+      the right-hand columns — so the two section pages open identically.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 pb-8 pt-16 sm:pt-24">
+    <ScrollReveal y={12} class="lg:grid lg:grid-cols-12 lg:gap-8">
+      <div class="lg:col-span-7">
+        <p class="eyebrow">Who we are</p>
+
+        <h1 class="mt-6 text-4xl">
+          Twenty-six people, two offices, and a partner on every file.
+        </h1>
+
+        <div class="rule-double mt-10"></div>
+      </div>
+
+      <p class="mt-8 text-lg text-ink-soft lg:col-span-4 lg:col-start-9 lg:mt-0">
+        A chartered practice for owner-managed and founder-led businesses —
+        registered to carry out audit work since 2003, and small enough that you
+        will meet everyone who touches your file.
+      </p>
+    </ScrollReveal>
+  </section>
+
+  {/* ---------------------------------------------------------------------
+      2. Positioning.
+
+      Prose in columns 1–7, the particulars ruled up in 9–12. The figures are
+      not decoration: every claim the copy makes about size and reach is
+      checkable against the column beside it, which is the point of printing
+      them rather than writing "a growing team".
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 py-16 sm:py-20">
+    <div class="lg:grid lg:grid-cols-12 lg:gap-16">
+      <ScrollReveal class="lg:col-span-7">
+        <h2 class="text-3xl">What we actually are.</h2>
+
+        <div class="mt-8 max-w-prose text-lg text-ink-soft [&>p+p]:mt-5">
+          <p>
+            Twenty-six of us, in London and in Manchester, working with about a
+            hundred and eighty companies. Most turn over between £500,000 and
+            £20 million and are still owned by the people who run them —
+            manufacturers and distributors, professional-services firms, and a
+            growing bench of venture-backed software businesses on their first
+            or second round.
+          </p>
+          <p>
+            The depth is in four places and we would rather say so than claim
+            the rest: statutory audit of owner-managed groups under FRS 102,
+            R&amp;D relief and EMI schemes for companies whose value sits in
+            work nobody has capitalised yet, multi-entity payroll for employers
+            between five and five hundred staff, and the tax work around a sale
+            — started two years before the buyer's advisers arrive, not two
+            months.
+          </p>
+          <p>
+            What we are not: a personal-tax practice, a compliance factory, or
+            a firm for sole traders and start-ups pre-revenue. We do not
+            structure anything offshore, and we do not audit listed entities.
+            If that is the work, we will tell you at the first meeting and give
+            you two names who do it properly.
+          </p>
+        </div>
+      </ScrollReveal>
+
+      {/* A statement column: label left, figure right, hairline between each
+          row, and the whole block closed with the double rule. `nums` so the
+          figures share a digit width and stack into a true right-hand edge. */}
+      <ScrollReveal
+        delay={0.1}
+        class="mt-12 lg:col-span-4 lg:col-start-9 lg:mt-3"
+      >
+        <h3
+          class="font-sans text-xs font-medium uppercase tracking-eyebrow text-ink-muted"
+        >
+          The practice, in figures
+        </h3>
+
+        <dl class="mt-5">
+          {
+            figures.map((figure) => (
+              <div class="flex items-baseline justify-between gap-6 border-t border-ink/15 py-3 first:border-t-0 first:pt-0">
+                <dt class="text-sm text-ink-muted">{figure.label}</dt>
+                <dd class="nums text-right font-display text-lg text-ink">
+                  {figure.value}
+                </dd>
+              </div>
+            ))
+          }
+        </dl>
+
+        <div class="rule-double mt-1"></div>
+      </ScrollReveal>
+    </div>
+  </section>
+
+  {/* ---------------------------------------------------------------------
+      3. The team.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 pb-24">
+    <ScrollReveal class="flex flex-wrap items-end justify-between gap-6 border-t border-ink/15 pt-16">
+      <div>
+        <p class="eyebrow">The bench</p>
+        <h2 class="mt-3 text-3xl">
+          {headcount} people you will deal with directly.
+        </h2>
+      </div>
+      <p class="max-w-sm text-sm text-ink-muted">
+        Nobody here is a relationship manager. Everyone below does the work they
+        are named against.
+      </p>
+    </ScrollReveal>
+
+    {
+      lead && (
+        /* Feature row for the senior name — image in columns 1–5, everything
+           else in 7–12. This is the only person on the page whose portrait
+           runs at full column height, which is what makes the grid beneath it
+           read as uneven rather than as a mistake. */
+        <ScrollReveal y={12} class="mt-12 lg:grid lg:grid-cols-12 lg:items-center lg:gap-12">
+          {/* Capped between sm and lg: at 768 the uncapped 4:5 crop is 840px
+              tall and fills the whole tablet screen on its own. It only goes
+              back to full column width once it has a text column beside it. */}
+          <div class="sm:max-w-md lg:col-span-5 lg:max-w-none">
+            <PlaceholderImage
+              label={`Headshot — ${lead.data.name}, ${lead.data.role}. Seated, desk, natural light.`}
+              width={720}
+              height={900}
+            />
+          </div>
+
+          <div class="mt-8 lg:col-span-6 lg:col-start-7 lg:mt-0">
+            <h3 class="text-4xl">{lead.data.name}</h3>
+            <p class="eyebrow mt-3">{lead.data.role}</p>
+            <p class="mt-6 max-w-prose text-lg text-ink-soft">{lead.data.bio}</p>
+          </div>
+        </ScrollReveal>
+      )
+    }
+
+    {
+      bench.length > 0 && (
+        /* The asymmetric grid. `items-start` so a short bio does not stretch
+           its cell to match the tall one beside it — stretched cells would put
+           the two columns back on a shared bottom edge and undo the offsets. */
+        <ScrollReveal
+          as="ul"
+          stagger={0.08}
+          class="mt-20 grid list-none grid-cols-1 gap-x-8 gap-y-16 pl-0 sm:grid-cols-2 lg:mt-24 lg:grid-cols-12 lg:items-start lg:gap-y-4"
+        >
+          {bench.map((member, position) => {
+            const slot = SLOTS[position % SLOTS.length];
+
+            return (
+              <li class:list={[slot.column, slot.offset]}>
+                {/* `member.data.photo` already holds the headshot path — swap
+                    this for an <img> once the shoot is delivered. The crop
+                    varies by slot, so the brief carries its own dimensions. */}
+                <PlaceholderImage
+                  label={`Headshot — ${member.data.name}, ${member.data.role}`}
+                  width={slot.width}
+                  height={slot.height}
+                />
+
+                <h3 class:list={['mt-6', slot.size]}>{member.data.name}</h3>
+                <p class="eyebrow mt-2">{member.data.role}</p>
+                <p class="mt-4 max-w-prose text-ink-soft">{member.data.bio}</p>
+              </li>
+            );
+          })}
+        </ScrollReveal>
+      )
+    }
+
+    {
+      team.length === 0 && (
+        /* The collection is Markdown-authored, so a fresh checkout can render
+           this page with nobody in it. Same convention as /services: say
+           something useful rather than leave a heading over a rule. */
+        <ScrollReveal class="mt-12 border-t border-ink/15 pt-12">
+          <p class="max-w-prose text-lg text-ink-soft">
+            The partner and director profiles are being written. In the
+            meantime, call the London office and ask who would run your
+            engagement — you will get a name and a direct line, not a form.
+          </p>
+        </ScrollReveal>
+      )
+    }
+
+    <div class="rule-double mt-24"></div>
+  </section>
+
+  {/* ---------------------------------------------------------------------
+      4. Closing band. Same treatment as the homepage and the service pages.
+  --------------------------------------------------------------------- */}
+  <section class="cta-band bg-ink text-paper">
+    <ScrollReveal class="mx-auto max-w-6xl px-6 py-20 sm:py-28">
+      <div class="lg:grid lg:grid-cols-12 lg:items-end lg:gap-8">
+        <div class="lg:col-span-7">
+          <p class="text-xs font-medium uppercase tracking-eyebrow text-amber-soft">
+            Start here
+          </p>
+
+          <h2 class="mt-4 text-4xl text-paper">
+            Ask for one of them by name.
+          </h2>
+
+          <p class="mt-6 max-w-prose text-lg text-paper/70">
+            A first consultation is an hour with the partner who would actually
+            run the engagement, at no charge — and you leave with a written
+            scope and a fixed price whether or not you take it further.
+          </p>
+        </div>
+
+        <div
+          class="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4 lg:col-span-4 lg:col-start-9 lg:mt-0 lg:justify-end"
+        >
+          <Button href="/contact" variant="on-ink">Book a consultation</Button>
+          <a href="tel:+442071234567" class="cta-link nums text-sm">
+            +44 20 7123 4567
+          </a>
+        </div>
+      </div>
+    </ScrollReveal>
+  </section>
+</BaseLayout>
+
+<style>
+  /* The prose-link underline is tuned for ink on paper; on the navy band it
+     needs to invert along with the text. */
+  .cta-link {
+    color: rgb(246 243 236 / 0.7);
+    text-decoration-color: rgb(246 243 236 / 0.35);
+  }
+
+  .cta-link:hover {
+    color: #f6f3ec; /* paper */
+    text-decoration-color: #e4a579; /* amber-soft */
+  }
+
+  /* amber-deep, the global focus colour, is barely visible on ink. `:global`
+     because the CTA is rendered by Button.astro — Astro's scope attribute only
+     lands on elements written in this file. */
+  .cta-band :global(:focus-visible) {
+    outline-color: #e4a579;
+  }
+</style>

@@ -1,0 +1,193 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ScrollReveal from '../../components/ScrollReveal.astro';
+import {
+  byNewest,
+  formatLong,
+  formatShort,
+  machineDate,
+  readingTime,
+} from '../../data/news';
+
+// Built from `data.slug`, not the loader's `id` — the files carry a `2026-`
+// sort prefix that has no business being in a published URL.
+export const getStaticPaths = (async () => {
+  const posts = await getCollection('news');
+
+  return posts.map((post) => ({
+    params: { slug: post.data.slug },
+    props: { post },
+  }));
+}) satisfies GetStaticPaths;
+
+const { post } = Astro.props;
+const { title, date, excerpt, author, authorRole, topic } = post.data;
+
+const { Content } = await render(post);
+
+const minutes = readingTime(post.body);
+
+// Three others for the foot of the page. Same topic first, then the newest of
+// whatever is left: a reader who has just finished the payroll note is more
+// likely to want the other payroll note than the most recent thing published.
+//
+// `sort` is stable, and `others` is already newest-first, so the same-topic
+// entries surface without losing date order within either group.
+const others = (await getCollection('news'))
+  .sort(byNewest)
+  .filter((entry) => entry.data.slug !== post.data.slug);
+
+const related = others
+  .slice()
+  .sort(
+    (a, b) =>
+      Number(b.data.topic === topic) - Number(a.data.topic === topic),
+  )
+  .slice(0, 3);
+---
+
+<BaseLayout title={`${title} — Ledger & Co.`} description={excerpt}>
+  <article>
+    {/* -------------------------------------------------------------------
+        1. Head.
+
+        Centred on the measure rather than hung on the 12-column grid: this
+        is one column of continuous prose, and the title, standfirst, byline
+        and body should all share one left edge the reader's eye can follow
+        without resetting.
+    ------------------------------------------------------------------- */}
+    <header class="mx-auto max-w-6xl px-6 pb-8 pt-10 sm:pt-14">
+      <ScrollReveal y={12} class="mx-auto max-w-prose">
+        <a
+          href="/news"
+          class="text-sm text-ink-muted no-underline transition-colors hover:text-amber-deep"
+        >
+          <span aria-hidden="true">&larr;</span> All news
+        </a>
+
+        <p class="eyebrow mt-10">{topic}</p>
+
+        {/* Narrower than the body measure: a headline at this size wants
+            three or four words a line, not the eleven that 68ch would give
+            it. */}
+        <h1 class="mt-5 max-w-[22ch] text-4xl">{title}</h1>
+
+        {/* The excerpt does double duty as the standfirst. Deliberately not
+            repeated further down — a reader who has just read it in 20px
+            does not need to meet it again in the first paragraph. */}
+        <p class="mt-8 text-xl text-ink-soft">{excerpt}</p>
+
+        {/* ---------------------------------------------------------------
+            Byline.
+
+            Ruled top and bottom, name at one end and date at the other —
+            the way a masthead sets it. No avatar: there is no photography
+            behind these pieces, and a generated initials disc would be
+            decoration standing in for a fact. The role is the part that
+            actually tells a first-time reader whether to trust the piece,
+            so it is set beside the name rather than hidden in a hover.
+        --------------------------------------------------------------- */}
+        <div
+          class="mt-10 flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2 border-y border-ink/15 py-5"
+        >
+          <p class="text-sm">
+            <span class="font-medium text-ink">{author}</span>
+            <span class="text-ink-muted">, {authorRole}</span>
+          </p>
+
+          <p class="nums text-sm text-ink-muted">
+            <time datetime={machineDate(date)}>{formatLong(date)}</time>
+            <span aria-hidden="true"> &middot; </span>
+            {minutes} min read
+          </p>
+        </div>
+      </ScrollReveal>
+    </header>
+
+    {/* -------------------------------------------------------------------
+        2. Body.
+
+        `max-w-prose` is 68ch (tailwind.config.ts) — inside the 65–75ch the
+        eye can track without losing the line return.
+
+        Typography is done with arbitrary variants rather than a scoped
+        <style> block, because `<Content />` renders Markdown outside this
+        component's scope and Astro's scope attribute would never reach it.
+        Element *appearance* — blockquote rules, list markers, code, links —
+        already comes from @layer base in global.css and is not restated
+        here; what these selectors add is vertical rhythm, which is a
+        property of this page's measure rather than of the elements.
+
+        Deliberately NOT wrapped in <ScrollReveal>. Everywhere else on the
+        site a reveal wraps a section the reader is travelling towards; here
+        it would wrap the entire reason the page exists. Two problems with
+        that: the whole body is one element, so it would fade in as a single
+        several-thousand-pixel block rather than section by section, and its
+        trigger point sits within a few pixels of the fold — which font
+        loading alone is enough to push either side of. Primary content does
+        not get to depend on that. The header above it still reveals, so the
+        page is not visually static on load.
+    ------------------------------------------------------------------- */}
+    <div class="mx-auto max-w-6xl px-6 pb-16">
+      <div
+        class="mx-auto max-w-prose text-lg text-ink-soft
+          [&>h2]:mt-14 [&>h2]:text-2xl
+          [&>h3]:mt-10 [&>h3]:text-xl
+          [&>h2+p]:mt-5 [&>h3+p]:mt-5
+          [&>p+p]:mt-6
+          [&>ol]:my-7 [&>ul]:my-7
+          [&_li+li]:mt-3
+          [&_strong]:font-semibold [&_strong]:text-ink"
+      >
+        <Content />
+      </div>
+    </div>
+
+    {/* -------------------------------------------------------------------
+        3. Related.
+
+        Three columns of plain text under one hairline each — the strip a
+        newspaper runs at the foot of a page. Not cards: there is nothing to
+        put in a card but the same words, and the box would only add
+        chrome around them.
+    ------------------------------------------------------------------- */}
+    {
+      related.length > 0 && (
+        <section class="mx-auto max-w-6xl px-6 pb-24">
+          <ScrollReveal>
+            <div class="rule-double mb-12" />
+
+            <h2 class="text-xs font-sans font-medium uppercase tracking-eyebrow text-ink-muted">
+              Also from the practice
+            </h2>
+
+            <ul class="mt-8 grid list-none gap-x-8 gap-y-10 pl-0 sm:grid-cols-3">
+              {related.map((entry) => (
+                <li class="group border-t border-ink/20 pt-5">
+                  <p class="nums text-sm text-ink-muted">
+                    <time datetime={machineDate(entry.data.date)}>
+                      {formatShort(entry.data.date)}
+                    </time>
+                    <span aria-hidden="true"> &middot; </span>
+                    {entry.data.topic}
+                  </p>
+
+                  <h3 class="mt-3 text-xl">
+                    <a
+                      href={`/news/${entry.data.slug}`}
+                      class="no-underline transition-colors group-hover:text-amber-deep"
+                    >
+                      {entry.data.title}
+                    </a>
+                  </h3>
+                </li>
+              ))}
+            </ul>
+          </ScrollReveal>
+        </section>
+      )
+    }
+  </article>
+</BaseLayout>

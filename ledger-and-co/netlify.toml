@@ -1,0 +1,19 @@
+# Netlify build configuration.
+#
+# Only needed if the site is deployed to Netlify — which is also what activates
+# the contact form's default backend (Netlify Forms). Deploying anywhere else?
+# Delete this file and set PUBLIC_FORMSPREE_ENDPOINT instead; see .env.example
+# and src/data/contact-form.ts.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Matches the `engines.node` floor in package.json. Netlify's default image
+  # can lag behind, and Astro 7 will not build on an older runtime.
+  NODE_VERSION = "22.12.0"
+
+# Form detection is on by default for any deployed HTML carrying the `netlify`
+# attribute, so there is nothing to declare here — the form on /contact is
+# picked up by the post-processing step of the deploy that publishes it.

@@ -1,0 +1,63 @@
+---
+import ScrollReveal from './ScrollReveal.astro';
+
+interface Props {
+  image: string;
+  alt: string;
+  eyebrow?: string;
+  title: string;
+  /** Puts the image on the right and the panel on the left. Alternate down a page. */
+  flip?: boolean;
+  class?: string;
+}
+
+const { image, alt, eyebrow, title, flip = false, class: className } = Astro.props;
+
+const hasActions = Astro.slots.has('actions');
+---
+
+{/*
+  Full-bleed: the section itself is unwrapped by any max-width container, so the
+  image column runs to the viewport edge. The text panel then pulls back *over*
+  that edge — up the image on small screens, into it on lg+ — so the two never
+  meet on a clean seam. That overlap is the point; keep the z-index.
+*/}
+<section class:list={['relative', className]}>
+  <div class="lg:grid lg:grid-cols-2 lg:items-center">
+    <div class:list={[flip && 'lg:order-2']}>
+      <img
+        src={image}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        class="h-64 w-full object-cover sm:h-80 lg:h-[34rem]"
+      />
+    </div>
+
+    <div
+      class:list={[
+        'relative z-10 -mt-12 px-4 sm:px-6 lg:mt-0 lg:px-0',
+        flip ? 'lg:order-1 lg:-mr-12 lg:justify-self-end' : 'lg:-ml-12',
+      ]}
+    >
+      <ScrollReveal class="rounded-[2px] bg-paper-bright p-8 ring-1 ring-ink/10 sm:p-10 lg:max-w-xl lg:p-12">
+        {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+        <h2 class="mt-3 text-3xl">{title}</h2>
+
+        <div class="mt-5 text-ink-soft [&>p+p]:mt-4">
+          <slot />
+        </div>
+
+        {
+          hasActions && (
+            <div class="mt-8 flex flex-wrap gap-3">
+              <slot name="actions" />
+            </div>
+          )
+        }
+
+        <div class="rule-double mt-10"></div>
+      </ScrollReveal>
+    </div>
+  </div>
+</section>

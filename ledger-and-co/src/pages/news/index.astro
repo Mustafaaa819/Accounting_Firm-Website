@@ -1,0 +1,165 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ScrollReveal from '../../components/ScrollReveal.astro';
+import {
+  byNewest,
+  formatShort,
+  machineDate,
+  readingTime,
+} from '../../data/news';
+
+// Newest first — the only sensible order for a publication, and the reason the
+// schema requires a date at all.
+const posts = (await getCollection('news')).sort(byNewest);
+
+// The lead runs at display scale; everything after it is a row. Splitting here
+// rather than branching inside the loop keeps the two treatments readable as
+// two blocks of markup instead of one with a conditional in every class list.
+const [lead, ...rest] = posts;
+---
+
+<BaseLayout
+  title="News — Ledger & Co."
+  description="Practice notes, deadline calendars and firm announcements from Ledger & Co. — written by the partners who do the work, not by a content agency."
+>
+  {/* ---------------------------------------------------------------------
+      1. Page head. Same 7 / 4 split as /services, so the two index pages
+      open identically and the section feels like one publication.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 pb-8 pt-16 sm:pt-24">
+    <ScrollReveal y={12} class="lg:grid lg:grid-cols-12 lg:gap-8">
+      <div class="lg:col-span-7">
+        <p class="eyebrow">News</p>
+
+        <h1 class="mt-6 text-4xl">Written when we have something to say.</h1>
+
+        <div class="rule-double mt-10"></div>
+      </div>
+
+      <p class="mt-8 text-lg text-ink-soft lg:col-span-4 lg:col-start-9 lg:mt-0">
+        Practice notes, deadline calendars and the occasional announcement.
+        Each one is written by the partner who deals with the question, which
+        is why there are a few a quarter rather than one a week.
+      </p>
+    </ScrollReveal>
+  </section>
+
+  {/* ---------------------------------------------------------------------
+      2. The list.
+
+      A newspaper page, not a grid of cards: one column of dates running down
+      the left margin, headlines and standfirsts against it, hairlines between.
+      No card, no shadow, no thumbnail — there is no photography behind these
+      pieces, and inventing a stock image per article to fill a tile is how a
+      technical note starts looking like a blog nobody reads.
+
+      The date column holds the same grid position on the lead and on every
+      row below it, so the dates form one true column the whole way down. The
+      lead is distinguished by type scale alone.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 pb-24">
+    {
+      posts.length > 0 ? (
+        <>
+          {/* -- Lead ------------------------------------------------------ */}
+          <ScrollReveal
+            as="article"
+            y={12}
+            class="group border-t border-ink/15 py-12 sm:py-14 lg:grid lg:grid-cols-12 lg:gap-8"
+          >
+            <div class="lg:col-span-3">
+              <p class="eyebrow">Latest</p>
+
+              <time
+                datetime={machineDate(lead.data.date)}
+                class="nums mt-3 block text-sm text-ink-muted"
+              >
+                {formatShort(lead.data.date)}
+              </time>
+
+              <p class="mt-1 text-sm text-ink-muted">{lead.data.topic}</p>
+            </div>
+
+            <div class="mt-6 lg:col-span-8 lg:col-start-5 lg:mt-0">
+              <h2 class="max-w-[20ch] text-4xl">
+                <a
+                  href={`/news/${lead.data.slug}`}
+                  class="no-underline transition-colors group-hover:text-amber-deep"
+                >
+                  {lead.data.title}
+                </a>
+              </h2>
+
+              <p class="mt-6 max-w-prose text-xl text-ink-soft">
+                {lead.data.excerpt}
+              </p>
+
+              <p class="nums mt-8 text-sm text-ink-muted">
+                {lead.data.author}
+                <span aria-hidden="true"> &middot; </span>
+                {readingTime(lead.body)} min read
+              </p>
+            </div>
+          </ScrollReveal>
+
+          {/* -- Everything else ------------------------------------------- */}
+          {rest.length > 0 && (
+            <ol class="list-none pl-0">
+              {rest.map((post) => (
+                <li class="group border-t border-ink/15 py-10 sm:py-12 lg:grid lg:grid-cols-12 lg:gap-8">
+                  <div class="lg:col-span-3">
+                    <time
+                      datetime={machineDate(post.data.date)}
+                      class="nums block text-sm text-ink-muted"
+                    >
+                      {formatShort(post.data.date)}
+                    </time>
+
+                    <p class="mt-1 text-sm text-ink-muted">{post.data.topic}</p>
+                  </div>
+
+                  <div class="mt-4 lg:col-span-8 lg:col-start-5 lg:mt-0">
+                    <h2 class="max-w-[28ch] text-2xl">
+                      <a
+                        href={`/news/${post.data.slug}`}
+                        class="no-underline transition-colors group-hover:text-amber-deep"
+                      >
+                        {post.data.title}
+                      </a>
+                    </h2>
+
+                    <p class="mt-4 max-w-prose text-ink-soft">
+                      {post.data.excerpt}
+                    </p>
+
+                    <p class="nums mt-5 text-sm text-ink-muted">
+                      {post.data.author}
+                      <span aria-hidden="true"> &middot; </span>
+                      {readingTime(post.body)} min read
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </>
+      ) : (
+        /* Markdown-authored, so a fresh checkout can render this page empty.
+           Same reasoning as /services: say something, rather than collapse to
+           a heading sitting on a rule. */
+        <ScrollReveal class="border-t border-ink/15 pt-12">
+          <p class="max-w-prose text-lg text-ink-soft">
+            Nothing published yet. The practice notes go out to clients by
+            email first and appear here afterwards — ask us to add you to the
+            list in the meantime.
+          </p>
+        </ScrollReveal>
+      )
+    }
+
+    {/* Closes the list, the way a total is ruled off. The last row's own
+        bottom padding is the only gap it needs. */}
+    <div class="rule-double"></div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,284 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Button from '../components/Button.astro';
+import ScrollReveal from '../components/ScrollReveal.astro';
+import { CLIENT_LOGIN_URL } from '../data/nav';
+import { headOffice, GENERAL_EMAIL } from '../data/offices';
+
+/*
+ * This page explains a third-party system; it does not implement one. There is
+ * no form on it, no credential field, and no /login route anywhere in this
+ * codebase — Exact Online holds the accounts, and the only thing this site does
+ * is point at it. The same rule as the header and footer CTAs: link out, never
+ * collect.
+ */
+
+// What is actually behind the login, written as the client would describe it
+// rather than as Exact's feature list.
+const capabilities = [
+  {
+    title: 'Accounts and returns, as filed',
+    body: 'Every set of statutory accounts, corporation tax return and VAT return we have filed for you, in the form it went to Companies House or HMRC — not a summary of it.',
+  },
+  {
+    title: 'Documents to approve and sign',
+    body: 'Anything waiting on you sits at the top of the dashboard. Approval and signature happen in Exact, so the signed copy files itself instead of living in somebody’s sent items.',
+  },
+  {
+    title: 'Payroll for your staff',
+    body: 'Payslips, P60s and P11Ds, published on the same schedule every month. Employees get their own view; they never see anything but their own.',
+  },
+  {
+    title: 'Invoices and what is outstanding',
+    body: 'Our invoices to you, what has been paid, and what has not — with the engagement letter each one is drawn against attached to it.',
+  },
+];
+---
+
+<BaseLayout
+  title="Client portal — Ledger & Co."
+  description="Existing clients access their accounts, returns, payroll documents and invoices through Exact Online. This page explains what is in there and how to get in — there is no login form on this site."
+>
+  {/* ---------------------------------------------------------------------
+      1. Page head. Same shape as /services, /who-we-are and /history —
+      title left, standfirst hung in the right-hand columns.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 pb-8 pt-16 sm:pt-24">
+    <ScrollReveal y={12} class="lg:grid lg:grid-cols-12 lg:gap-8">
+      <div class="lg:col-span-7">
+        <p class="eyebrow">Client portal</p>
+
+        <h1 class="mt-6 text-4xl">Your records live in Exact Online.</h1>
+
+        <div class="rule-double mt-10"></div>
+      </div>
+
+      <p class="mt-8 text-lg text-ink-soft lg:col-span-4 lg:col-start-9 lg:mt-0">
+        We do not keep a second copy of your file behind a login of our own.
+        Everything we hold for you is in Exact Online, and the button below is
+        the door to it.
+      </p>
+    </ScrollReveal>
+  </section>
+
+  {/* ---------------------------------------------------------------------
+      2. The link-out itself, and the reasoning next to it.
+
+      The CTA is placed high — anyone arriving here has come to sign in, not to
+      read — with the explanation beside it for the smaller number of people who
+      want to know why the portal is somebody else's system.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 py-12 sm:py-16">
+    <div class="lg:grid lg:grid-cols-12 lg:gap-16">
+      <ScrollReveal class="lg:col-span-7">
+        <div class="max-w-prose text-lg text-ink-soft [&>p+p]:mt-5">
+          <p>
+            Exact Online is the accounting platform the practice runs on. Your
+            bookkeeping, your filings and your payroll are all produced in it,
+            which means the copy you are looking at is the working copy — not an
+            export of it made on the day somebody remembered to run one.
+          </p>
+          <p>
+            You will have been sent an invitation by email when your engagement
+            started, and your credentials are held by Exact rather than by us.
+            That is deliberate: this site is a brochure, and a brochure has no
+            business holding anybody's password.
+          </p>
+        </div>
+      </ScrollReveal>
+
+      {/* The CTA panel. Ruled and inset rather than a shadowed card — the same
+          statement-column treatment /who-we-are uses for its particulars. */}
+      <ScrollReveal
+        delay={0.1}
+        class="mt-10 lg:col-span-4 lg:col-start-9 lg:mt-1"
+      >
+        <div class="border-t border-ink/25 bg-paper-warm p-8">
+          <h2 class="font-sans text-xs font-medium uppercase tracking-eyebrow text-ink-muted">
+            Existing clients
+          </h2>
+
+          <p class="mt-4 font-display text-xl text-ink">
+            Sign in to Exact Online.
+          </p>
+
+          {/*
+            The same link-out as the header and footer, with the same
+            rel="noopener noreferrer" — without it the third-party document
+            gets a handle on this window through `window.opener`.
+          */}
+          <a
+            href={CLIENT_LOGIN_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn--primary mt-6 w-full"
+          >
+            Client Login
+            <svg
+              class="size-3"
+              viewBox="0 0 12 12"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M4 2h6v6M10 2 2.5 9.5"></path>
+            </svg>
+            <span class="sr-only">(opens in a new tab)</span>
+          </a>
+
+          <p class="mt-4 text-xs text-ink-muted">
+            Opens start.exactonline.com in a new tab.
+          </p>
+
+          <div class="rule-double mt-8"></div>
+
+          <p class="mt-6 text-sm text-ink-soft">
+            No invitation yet? Call {headOffice.city} on{' '}
+            <a href={headOffice.phoneHref} class="nums">{headOffice.phone}</a> and
+            we will send one while you are on the phone.
+          </p>
+        </div>
+      </ScrollReveal>
+    </div>
+  </section>
+
+  {/* ---------------------------------------------------------------------
+      3. What is behind the login. A ruled list, not icon cards.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 py-12 sm:py-16">
+    <ScrollReveal class="border-t border-ink/15 pt-16">
+      <p class="eyebrow">What is in there</p>
+      <h2 class="mt-3 max-w-2xl text-3xl">
+        Four things, and no dashboard you have to learn.
+      </h2>
+    </ScrollReveal>
+
+    <ScrollReveal
+      as="dl"
+      stagger={0.08}
+      class="mt-12 lg:grid lg:grid-cols-12 lg:gap-x-16"
+    >
+      {
+        capabilities.map((item) => (
+          /* Two up on lg, and the hairline sits on top of every entry so the
+             set reads as ruled-off rows rather than as a grid of boxes. */
+          <div class="border-t border-ink/15 py-6 lg:col-span-6">
+            <dt class="font-display text-xl text-ink">{item.title}</dt>
+            <dd class="mt-3 max-w-prose text-ink-soft">{item.body}</dd>
+          </div>
+        ))
+      }
+    </ScrollReveal>
+
+    <div class="rule-double mt-10"></div>
+  </section>
+
+  {/* ---------------------------------------------------------------------
+      4. Getting in when you cannot.
+
+      Including the anti-phishing line, which for an accountancy practice is
+      not boilerplate: clients who bank documents with their accountant are a
+      standing target, and the only defence a static site can offer is to say
+      plainly what we will never ask for.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 pb-24">
+    <div class="lg:grid lg:grid-cols-12 lg:gap-16">
+      <ScrollReveal class="lg:col-span-7">
+        <h2 class="text-3xl">If you cannot get in.</h2>
+
+        <div class="mt-8 max-w-prose text-lg text-ink-soft [&>p+p]:mt-5">
+          <p>
+            {/* Quoted rather than italicised: neither family is self-hosted
+                with a true italic, so <em> renders as a faux oblique — see the
+                note on blockquote in global.css. */}
+            Use the “forgotten password” link on the Exact sign-in page first —
+            it resets against your own email address and takes about a minute.
+            We cannot see your password and cannot reset it for you, so calling
+            us first is the slower route.
+          </p>
+          <p>
+            If the reset does not arrive, if the invitation went to somebody who
+            has since left, or if you need a colleague added or removed, that is
+            ours to fix. Call the office or{' '}
+            <a href="/contact">send us the details</a> and it is usually done the
+            same day.
+          </p>
+        </div>
+      </ScrollReveal>
+
+      <ScrollReveal
+        delay={0.1}
+        class="mt-10 lg:col-span-4 lg:col-start-9 lg:mt-2"
+      >
+        <div class="border-l-2 border-amber pl-6">
+          <h3 class="font-sans text-xs font-medium uppercase tracking-eyebrow text-ink-muted">
+            One thing worth knowing
+          </h3>
+          <p class="mt-4 text-ink-soft">
+            We will never email or phone you asking for your Exact password, and
+            we will never send you a sign-in link out of the blue. If something
+            claiming to be from us does, it is not from us — forward it to{' '}
+            <a href={`mailto:${GENERAL_EMAIL}`}>{GENERAL_EMAIL}</a> and delete it.
+          </p>
+        </div>
+      </ScrollReveal>
+    </div>
+  </section>
+
+  {/* ---------------------------------------------------------------------
+      5. Closing band. Same treatment as every other page — and aimed at the
+      one audience this page is not for, since prospects land here too.
+  --------------------------------------------------------------------- */}
+  <section class="cta-band bg-ink text-paper">
+    <ScrollReveal class="mx-auto max-w-6xl px-6 py-20 sm:py-28">
+      <div class="lg:grid lg:grid-cols-12 lg:items-end lg:gap-8">
+        <div class="lg:col-span-7">
+          <p class="text-xs font-medium uppercase tracking-eyebrow text-amber-soft">
+            Not a client yet
+          </p>
+
+          <h2 class="mt-4 text-4xl text-paper">
+            Then the login is not for you — this is.
+          </h2>
+
+          <p class="mt-6 max-w-prose text-lg text-paper/70">
+            A first consultation is an hour with the partner who would run the
+            engagement, at no charge, and you leave with a written scope and a
+            fixed price whether or not you take it further.
+          </p>
+        </div>
+
+        <div
+          class="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4 lg:col-span-4 lg:col-start-9 lg:mt-0 lg:justify-end"
+        >
+          <Button href="/contact" variant="on-ink">Book a consultation</Button>
+          <a href="/services" class="cta-link text-sm">See our services</a>
+        </div>
+      </div>
+    </ScrollReveal>
+  </section>
+</BaseLayout>
+
+<style>
+  /* The prose-link underline is tuned for ink on paper; on the navy band it
+     needs to invert along with the text. */
+  .cta-link {
+    color: rgb(246 243 236 / 0.7);
+    text-decoration-color: rgb(246 243 236 / 0.35);
+  }
+
+  .cta-link:hover {
+    color: #f6f3ec; /* paper */
+    text-decoration-color: #e4a579; /* amber-soft */
+  }
+
+  /* amber-deep, the global focus colour, is barely visible on ink. `:global`
+     because the CTA is rendered by Button.astro — Astro's scope attribute only
+     lands on elements written in this file. */
+  .cta-band :global(:focus-visible) {
+    outline-color: #e4a579;
+  }
+</style>

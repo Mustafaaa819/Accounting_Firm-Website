@@ -1,0 +1,139 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Button from '../components/Button.astro';
+import ScrollReveal from '../components/ScrollReveal.astro';
+import HistoryTimeline from '../components/HistoryTimeline.astro';
+import { milestones } from '../data/history';
+
+// The terminus under the last milestone. Written here rather than in the data
+// file because it is the page's closing argument, not a dated event — and the
+// figures in it are the ones /who-we-are prints in its particulars column.
+const cap = {
+  label: 'Today',
+  title: 'Twenty-six people, and the same argument.',
+  body:
+    'Two offices, about a hundred and eighty client companies, five partners and directors, and a first year of £61,000 a long way behind us. What has not moved in twenty-eight years is the thing the whole practice is arranged around: the person who signs your accounts should be the person who has met you.',
+};
+
+// The oldest year on the page, so the standfirst and the metadata cannot drift
+// from the array when a milestone is added at either end.
+const foundedYear = milestones[0]?.year ?? '1998';
+---
+
+<BaseLayout
+  title="Our history — Ledger & Co."
+  description="From a two-person practice above a locksmith on Leather Lane in 1998 to twenty-six people in London and Manchester — the milestones that shaped how Ledger & Co. works."
+>
+  {/* ---------------------------------------------------------------------
+      1. Page head. The same shape as /services and /who-we-are — title left,
+      standfirst hung in the right-hand columns.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 pb-8 pt-16 sm:pt-24">
+    <ScrollReveal y={12} class="lg:grid lg:grid-cols-12 lg:gap-8">
+      <div class="lg:col-span-7">
+        <p class="eyebrow">Our history</p>
+
+        <h1 class="mt-6 text-4xl">
+          Twenty-eight years, seven of which changed how we work.
+        </h1>
+
+        <div class="rule-double mt-10"></div>
+      </div>
+
+      <p class="mt-8 text-lg text-ink-soft lg:col-span-4 lg:col-start-9 lg:mt-0">
+        Most of a firm's history is invoices. What follows is the short list
+        that actually explains the practice you would be hiring — including the
+        two years we would rather not have had.
+      </p>
+    </ScrollReveal>
+  </section>
+
+  {/* ---------------------------------------------------------------------
+      2. The one-paragraph version, for anyone who will not scroll.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 py-12 sm:py-16">
+    <ScrollReveal class="lg:grid lg:grid-cols-12 lg:gap-16">
+      <div class="max-w-prose text-lg text-ink-soft lg:col-span-7 [&>p+p]:mt-5">
+        <p>
+          Ledger &amp; Co. was founded in {foundedYear} by Amara Oyelaran, who
+          had spent the previous decade running financial reporting inside
+          listed groups and had come to the view that the accountants she dealt
+          with were selling her process when what she wanted was judgement. The
+          practice has grown roughly one person a year since, which is slow on
+          purpose.
+        </p>
+        <p>
+          Nothing below is a rebrand or an award. Each of the seven is a point
+          where we changed what we do or how we charge for it, and each one is
+          still visible in an engagement letter you would sign today.
+        </p>
+      </div>
+    </ScrollReveal>
+  </section>
+
+  {/* ---------------------------------------------------------------------
+      3. The timeline.
+
+      Narrower than the max-w-6xl the rest of the site uses: at full width the
+      alternating columns throw the two halves so far apart that the eye stops
+      reading them as one sequence.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-5xl px-6 pb-24 pt-8 sm:pb-32">
+    <HistoryTimeline milestones={milestones} cap={cap} />
+  </section>
+
+  {/* ---------------------------------------------------------------------
+      4. Closing band. Same treatment as the homepage, /services and
+      /who-we-are.
+  --------------------------------------------------------------------- */}
+  <section class="cta-band bg-ink text-paper">
+    <ScrollReveal class="mx-auto max-w-6xl px-6 py-20 sm:py-28">
+      <div class="lg:grid lg:grid-cols-12 lg:items-end lg:gap-8">
+        <div class="lg:col-span-7">
+          <p class="text-xs font-medium uppercase tracking-eyebrow text-amber-soft">
+            Start here
+          </p>
+
+          <h2 class="mt-4 text-4xl text-paper">
+            The next line in it could be yours.
+          </h2>
+
+          <p class="mt-6 max-w-prose text-lg text-paper/70">
+            A first consultation is an hour with the partner who would actually
+            run the engagement, at no charge — and you leave with a written
+            scope and a fixed price whether or not you take it further. That
+            has been the arrangement since 2009, for the reasons above.
+          </p>
+        </div>
+
+        <div
+          class="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4 lg:col-span-4 lg:col-start-9 lg:mt-0 lg:justify-end"
+        >
+          <Button href="/contact" variant="on-ink">Book a consultation</Button>
+          <a href="/who-we-are" class="cta-link text-sm">Meet the people</a>
+        </div>
+      </div>
+    </ScrollReveal>
+  </section>
+</BaseLayout>
+
+<style>
+  /* The prose-link underline is tuned for ink on paper; on the navy band it
+     needs to invert along with the text. Same pair of rules as /who-we-are. */
+  .cta-link {
+    color: rgb(246 243 236 / 0.7);
+    text-decoration-color: rgb(246 243 236 / 0.35);
+  }
+
+  .cta-link:hover {
+    color: #f6f3ec; /* paper */
+    text-decoration-color: #e4a579; /* amber-soft */
+  }
+
+  /* amber-deep, the global focus colour, is barely visible on ink. `:global`
+     because the CTA is rendered by Button.astro — Astro's scope attribute only
+     lands on elements written in this file. */
+  .cta-band :global(:focus-visible) {
+    outline-color: #e4a579;
+  }
+</style>

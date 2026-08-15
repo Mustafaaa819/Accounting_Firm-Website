@@ -1,0 +1,50 @@
+---
+interface Props {
+  /**
+   * What the real photograph should show. Written for whoever commissions the
+   * shoot, not for the visitor — this block is scaffolding and says so.
+   */
+  label: string;
+  /** Intended asset size in px. Quoted in the block so the brief travels with the layout. */
+  width: number;
+  height: number;
+  /** `ink` for placement on the navy bands, where the paper fill would glare. */
+  tone?: 'paper' | 'ink';
+  class?: string;
+}
+
+const { label, width, height, tone = 'paper', class: className } = Astro.props;
+---
+
+{/*
+  A flat fill holding the space a photograph will take, at the aspect ratio it
+  will have — so dropping the real image in later changes the picture, not the
+  layout. Deliberately not a grey stock-photo silhouette: this has to be
+  obviously unfinished at a glance, or it ships.
+*/}
+{/*
+  `role="img"` with a name, rather than three loose lines of text.
+
+  Without it a screen reader reads the block as ordinary prose — "Photography
+  to come, Headshot — Amara Oyelaran…, 720 × 900" — dropped into the middle of
+  the page with nothing to say it is a picture. With it, the block is announced
+  once, as an image, with the name below; the children go presentational, so the
+  dimensions stop being read out. The name is also the alt text that ships when
+  the real <img> replaces this.
+*/}
+<div
+  role="img"
+  aria-label={`Placeholder image. ${label}`}
+  class:list={[
+    'flex flex-col items-center justify-center gap-2 overflow-hidden p-6 text-center',
+    tone === 'ink'
+      ? 'bg-ink-soft text-paper/70 ring-1 ring-inset ring-paper/20'
+      : 'bg-paper-warm text-ink-muted ring-1 ring-inset ring-ink/15',
+    className,
+  ]}
+  style={`aspect-ratio: ${width} / ${height}`}
+>
+  <p class="text-xs uppercase tracking-eyebrow">Photography to come</p>
+  <p class="max-w-[26ch] text-sm">{label}</p>
+  <p class="nums text-xs">{width} &times; {height}</p>
+</div>

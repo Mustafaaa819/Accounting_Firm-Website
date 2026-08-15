@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="Ledger &amp; Co.">
+  <!-- PLACEHOLDER SHARE CARD.
+       NOTE: most crawlers (Facebook, LinkedIn, Slack) will not render an SVG
+       og:image. Replace this with a 1200x630 PNG or JPG before launch and
+       update the `image` default in BaseLayout.astro. -->
+  <rect width="1200" height="630" fill="#12203A" />
+
+  <g stroke="#F6F3EC" stroke-opacity="0.1" stroke-width="2">
+    <path d="M0 120h1200M0 200h1200M0 280h1200M0 360h1200M0 440h1200M0 520h1200" />
+  </g>
+
+  <text x="90" y="300" font-family="Georgia, 'Times New Roman', serif" font-size="96" fill="#F6F3EC">
+    Ledger <tspan fill="#C4682B">&amp;</tspan> Co.
+  </text>
+  <text x="94" y="360" font-family="Helvetica, Arial, sans-serif" font-size="26" letter-spacing="6" fill="#F6F3EC" fill-opacity="0.65">
+    CHARTERED ACCOUNTANTS
+  </text>
+
+  <g fill="#C4682B">
+    <rect x="90" y="404" width="260" height="3" />
+    <rect x="90" y="414" width="260" height="3" />
+  </g>
+</svg>

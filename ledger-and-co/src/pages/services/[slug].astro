@@ -1,0 +1,200 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Button from '../../components/Button.astro';
+import ScrollReveal from '../../components/ScrollReveal.astro';
+import LedgerSpread from '../../components/LedgerSpread.astro';
+
+// The route is built from `data.slug`, not from the loader's `id`, so renaming
+// a Markdown file never changes a published URL. The schema requires the field
+// for exactly that reason.
+export const getStaticPaths = (async () => {
+  const services = await getCollection('services');
+
+  return services.map((service) => ({
+    params: { slug: service.data.slug },
+    props: { service },
+  }));
+}) satisfies GetStaticPaths;
+
+const { service } = Astro.props;
+const { title, summary, audience, included, order } = service.data;
+
+// Compiled Markdown body. `render()` is the Astro 5+ standalone — the old
+// `entry.render()` method is gone in Astro 7.
+const { Content } = await render(service);
+
+// Read again rather than threading the whole collection through props:
+// getCollection is memoised per build, so this costs nothing.
+const others = (await getCollection('services'))
+  .filter((entry) => entry.data.slug !== service.data.slug)
+  .sort((a, b) => a.data.order - b.data.order);
+
+const position = String(order).padStart(2, '0');
+---
+
+<BaseLayout title={`${title} — Ledger & Co.`} description={summary}>
+  {/* ---------------------------------------------------------------------
+      1. Head. The number ties the page back to its row on /services.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 pb-8 pt-10 sm:pt-14">
+    <ScrollReveal y={12}>
+      <a
+        href="/services"
+        class="text-sm text-ink-muted no-underline transition-colors hover:text-amber-deep"
+      >
+        <span aria-hidden="true">&larr;</span> All services
+      </a>
+
+      <p class="eyebrow nums mt-10">Services &middot; {position}</p>
+
+      <h1 class="mt-5 max-w-[24ch] text-4xl">{title}</h1>
+
+      <div class="rule-double mt-10"></div>
+
+      <p class="mt-10 max-w-prose text-xl text-ink-soft">{summary}</p>
+    </ScrollReveal>
+  </section>
+
+  {/* ---------------------------------------------------------------------
+      2. The written scope, with "who it's for" hung beside it.
+
+      The audience note sits in the right-hand columns rather than at the foot
+      of the page: a visitor deciding whether this engagement is theirs at all
+      should not have to read the whole thing first to find out.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 py-16">
+    <div class="lg:grid lg:grid-cols-12 lg:gap-16">
+      <ScrollReveal class="lg:col-span-7">
+        {/* Markdown body. The arbitrary-variant selectors match
+            DenseTextSection, so body copy sets identically on both. */}
+        <div
+          class="max-w-prose text-lg text-ink-soft [&>h3]:mt-10 [&>h3]:text-xl [&>p+p]:mt-5"
+        >
+          <Content />
+        </div>
+      </ScrollReveal>
+
+      <ScrollReveal
+        delay={0.1}
+        as="aside"
+        class="mt-12 border-l-2 border-amber pl-6 lg:col-span-4 lg:col-start-9 lg:mt-2 lg:border-l-0 lg:border-t lg:border-ink/20 lg:pl-0 lg:pt-5"
+      >
+        <h2 class="text-xs font-sans font-medium uppercase tracking-eyebrow text-ink-muted">
+          Who it&rsquo;s for
+        </h2>
+        <p class="mt-4 text-ink-soft">{audience}</p>
+      </ScrollReveal>
+    </div>
+  </section>
+
+  {/* ---------------------------------------------------------------------
+      3. What's included — the house ledger spread, one hairline-separated
+      row per scope line.
+  --------------------------------------------------------------------- */}
+  <LedgerSpread
+    eyebrow="Scope"
+    title="What’s included."
+    note="This is the standard scope. Anything outside it is quoted before the work starts, never added to the invoice afterwards."
+  >
+    {
+      included.map((item, i) => (
+        <div class="flex gap-5 bg-paper py-5 sm:gap-6 sm:py-6">
+          {/* Decorative counter — the list is already an ordered set of rows
+              visually, and reading "01" before each line adds nothing aloud. */}
+          <span aria-hidden="true" class="nums mt-1.5 shrink-0 text-xs text-amber-deep">
+            {String(i + 1).padStart(2, '0')}
+          </span>
+          <p class="text-ink-soft">{item}</p>
+        </div>
+      ))
+    }
+  </LedgerSpread>
+
+  {/* ---------------------------------------------------------------------
+      4. The other four, so a page that turns out to be the wrong engagement
+      is not a dead end.
+  --------------------------------------------------------------------- */}
+  {
+    others.length > 0 && (
+      <section class="mx-auto max-w-6xl px-6 pb-20">
+        <ScrollReveal>
+          <p class="eyebrow">Also on the shelf</p>
+
+          <ul class="mt-6 flex list-none flex-wrap gap-x-8 gap-y-3 pl-0">
+            {others.map((entry) => (
+              <li>
+                <a href={`/services/${entry.data.slug}`} class="text-sm">
+                  {entry.data.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </ScrollReveal>
+      </section>
+    )
+  }
+
+  {/* ---------------------------------------------------------------------
+      5. Closing CTA.
+
+      NOT the Client Login button from the header. That is a link-out to Exact
+      Online for clients who already have credentials; anyone reading a service
+      page is deciding whether to become a client at all. Sending a prospect to
+      a login screen is a dead end, and putting the two side by side teaches
+      visitors that the primary button sometimes means "you cannot use this".
+      The only action here is a route into the contact page.
+  --------------------------------------------------------------------- */}
+  <section class="cta-band bg-ink text-paper">
+    <ScrollReveal class="mx-auto max-w-6xl px-6 py-20 sm:py-24">
+      <div class="lg:grid lg:grid-cols-12 lg:items-end lg:gap-8">
+        <div class="lg:col-span-7">
+          <p class="text-xs font-medium uppercase tracking-eyebrow text-amber-soft">
+            {title}
+          </p>
+
+          <h2 class="mt-4 text-3xl text-paper">
+            Tell us what this looks like at your end.
+          </h2>
+
+          <p class="mt-6 max-w-prose text-lg text-paper/70">
+            An hour with the partner who would run the engagement, at no charge.
+            You leave with a written scope and a fixed price, whether or not you
+            take it any further.
+          </p>
+        </div>
+
+        <div
+          class="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4 lg:col-span-4 lg:col-start-9 lg:mt-0 lg:justify-end"
+        >
+          <Button href="/contact" variant="on-ink">Get in touch</Button>
+          <a href="tel:+442071234567" class="cta-link nums text-sm">
+            +44 20 7123 4567
+          </a>
+        </div>
+      </div>
+    </ScrollReveal>
+  </section>
+</BaseLayout>
+
+<style>
+  /* Same two corrections the homepage band needs: the prose-link underline is
+     tuned for ink on paper, and amber-deep — the global focus colour — is
+     almost invisible on navy. */
+  .cta-link {
+    color: rgb(246 243 236 / 0.7);
+    text-decoration-color: rgb(246 243 236 / 0.35);
+  }
+
+  .cta-link:hover {
+    color: #f6f3ec; /* paper */
+    text-decoration-color: #e4a579; /* amber-soft */
+  }
+
+  /* `:global` because the button is rendered by Button.astro — Astro's scope
+     attribute only lands on elements written in this file. */
+  .cta-band :global(:focus-visible) {
+    outline-color: #e4a579;
+  }
+</style>

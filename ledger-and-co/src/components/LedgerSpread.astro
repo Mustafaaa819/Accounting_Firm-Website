@@ -1,0 +1,40 @@
+---
+import ScrollReveal from './ScrollReveal.astro';
+
+interface Props {
+  eyebrow?: string;
+  title: string;
+  /** Short standfirst under the heading, in the left column. */
+  note?: string;
+  /** Seconds between each child of the right column animating in. */
+  stagger?: number;
+  class?: string;
+}
+
+const { eyebrow, title, note, stagger = 0.08, class: className } = Astro.props;
+---
+
+{/*
+  The offset two-column, built on double-entry: two sides that start unlevel and
+  still have to balance. The right column drops 5rem below the left on lg+ and is
+  separated by a hairline, so the eye reads them as facing pages of a ledger
+  rather than as a headline sitting above its list.
+*/}
+<section class:list={['mx-auto max-w-6xl px-6 py-24', className]}>
+  <div class="lg:grid lg:grid-cols-[minmax(0,20rem)_1fr] lg:gap-16">
+    {/* self-start is what lets the sticky take effect — grid items stretch by default. */}
+    <div class="lg:sticky lg:top-24 lg:self-start">
+      {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+      <h2 class="mt-3 text-3xl">{title}</h2>
+      {note && <p class="mt-5 text-ink-muted">{note}</p>}
+      <slot name="aside" />
+    </div>
+
+    <div class="mt-12 lg:mt-20 lg:border-l lg:border-ink/10 lg:pl-16">
+      <ScrollReveal stagger={stagger} class="grid gap-px bg-ink/10">
+        <slot />
+      </ScrollReveal>
+      <div class="rule-double mt-12"></div>
+    </div>
+  </div>
+</section>

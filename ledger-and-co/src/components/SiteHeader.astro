@@ -1,0 +1,558 @@
+---
+import { primaryNav, CLIENT_LOGIN_URL, isCurrentPath } from '../data/nav';
+
+const pathname = Astro.url.pathname;
+---
+
+{/*
+  The shrink-on-scroll state lives in `data-scrolled` on this element and the
+  drawer state in `data-menu-open`; every size and transform below is driven off
+  those two attributes, so the script only ever toggles attributes and never
+  writes styles.
+
+  z-50 on the surface keeps the hamburger clickable above its own backdrop —
+  the toggle has to stay reachable to animate back into a close button.
+*/}
+<header data-site-header class="sticky top-0 z-50">
+  {/*
+    The translucent surface is a sibling of the drawer, not its ancestor, on
+    purpose: `backdrop-filter` makes an element a containing block for its
+    `position: fixed` descendants, which would pin the drawer to the header
+    strip instead of the viewport.
+  */}
+  <div
+    class="header-surface relative z-50 border-b border-ink/10 bg-paper/85 backdrop-blur"
+  >
+    <div
+      class="header-bar mx-auto flex max-w-6xl items-center justify-between gap-6 px-6"
+    >
+      {/* Structural links opt out of the underlined prose-link base style. */}
+      <a
+        href="/"
+        class="wordmark font-display tracking-display text-ink no-underline"
+        aria-label="Ledger & Co. — home"
+      >
+        Ledger <span class="text-amber-deep">&amp;</span> Co.
+      </a>
+
+      <nav class="hidden lg:block" aria-label="Primary">
+        <ul class="flex list-none items-center gap-7 pl-0 text-sm text-ink-soft">
+          {
+            primaryNav.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  class="nav-link no-underline transition-colors hover:text-amber-deep"
+                  aria-current={isCurrentPath(pathname, link.href) ? 'page' : undefined}
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <div class="flex items-center gap-2">
+        {/*
+          A real link-out to Exact Online, opened in a new tab. rel="noopener
+          noreferrer" is mandatory here: without it the third-party document
+          gets a handle on this window through `window.opener`.
+        */}
+        <a
+          href={CLIENT_LOGIN_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn btn--primary header-cta hidden lg:inline-flex"
+        >
+          Client Login
+          <svg
+            class="size-3"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M4 2h6v6M10 2 2.5 9.5"></path>
+          </svg>
+          <span class="sr-only">(opens in a new tab)</span>
+        </a>
+
+        <button
+          type="button"
+          data-menu-toggle
+          class="menu-toggle relative -mr-2 size-11 shrink-0 lg:hidden"
+          aria-expanded="false"
+          aria-controls="site-menu"
+        >
+          <span class="sr-only">Menu</span>
+          <span class="menu-bar menu-bar--top bg-ink"></span>
+          <span class="menu-bar menu-bar--mid bg-ink"></span>
+          <span class="menu-bar menu-bar--bottom bg-ink"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {/*
+    Backdrop and drawer both start below the bar, at --header-h, which the
+    script measures and keeps in sync while the header shrinks. Clicking the
+    dimmed strip beside the drawer is the "outside click" that closes it.
+  */}
+  <div class="menu-backdrop bg-ink/40 lg:hidden" data-menu-backdrop></div>
+
+  <div id="site-menu" class="menu-panel bg-paper-bright lg:hidden" data-menu-panel>
+    <nav aria-label="Primary — mobile">
+      <ul class="flex list-none flex-col pl-0">
+        {
+          primaryNav.map((link) => (
+            <li class="border-b border-ink/10">
+              <a
+                href={link.href}
+                class="menu-link block py-4 font-display text-xl text-ink no-underline transition-colors hover:text-amber-deep"
+                aria-current={isCurrentPath(pathname, link.href) ? 'page' : undefined}
+              >
+                {link.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <a
+      href={CLIENT_LOGIN_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn btn--primary mt-8 w-full"
+    >
+      Client Login
+      <svg
+        class="size-3"
+        viewBox="0 0 12 12"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M4 2h6v6M10 2 2.5 9.5"></path>
+      </svg>
+      <span class="sr-only">(opens in a new tab)</span>
+    </a>
+
+    <p class="mt-6 text-xs text-ink-muted">
+      Client Login opens Exact Online in a new tab.
+    </p>
+  </div>
+</header>
+
+<style>
+  /* -------------------------------------------------------------------------
+     Shrink on scroll.
+
+     Sizes are custom properties on the header so the bar, the wordmark and the
+     CTA all read the same state; `data-scrolled` swaps the whole set at once.
+     The scrolled wordmark/padding land on the `lg`/`sm` steps of the type ramp
+     rather than arbitrary values.
+  ------------------------------------------------------------------------- */
+
+  [data-site-header] {
+    --bar-pad: 1.5rem;
+    --cta-pad: 0.75rem;
+    --wordmark-size: clamp(1.375rem, 1.25rem + 0.6vw, 1.75rem);
+  }
+
+  [data-site-header][data-scrolled] {
+    --bar-pad: 0.6rem;
+    --cta-pad: 0.55rem;
+    --wordmark-size: clamp(1.125rem, 1.05rem + 0.38vw, 1.375rem);
+  }
+
+  .header-surface {
+    transition:
+      box-shadow 0.3s ease,
+      background-color 0.3s ease;
+  }
+
+  /* ink at 8% — the shadow only appears once the page is scrolled under the
+     bar, which is the whole point of the state. */
+  [data-scrolled] .header-surface {
+    box-shadow: 0 1px 12px rgb(18 32 58 / 0.08);
+
+    /*
+       Opacity goes up once there is page behind the bar.
+
+       At rest the surface is bg-paper/85, which is fine over the hero — the
+       only thing under the bar at the top of a page is more paper. Scrolled,
+       the thing behind can be the navy CTA band or the footer, and 15% of
+       #12203A bleeding through drags the composited bar down to rgb(211, 211,
+       209). Measured, not estimated: the header's own amber-deep — the
+       wordmark ampersand, the active nav link, the hover colour — lands at
+       3.8:1 on that, under the 4.5:1 AA floor it clears comfortably (5.18:1)
+       over paper. Text colour is not the thing to change here; the ground
+       under it is, since the same amber is correct everywhere else on paper.
+
+       96% keeps the frost readable as an effect while holding the ampersand
+       at 4.7:1 over the darkest ground the bar can acquire. Raw rgb() because
+       tokens do not reach raw CSS — see the note in global.css; this is
+       paper (#F6F3EC).
+    */
+    background-color: rgb(246 243 236 / 0.96);
+  }
+
+  .header-bar {
+    padding-block: var(--bar-pad);
+    transition: padding 0.3s ease;
+  }
+
+  .wordmark {
+    font-size: var(--wordmark-size);
+    line-height: 1.2;
+    transition: font-size 0.3s ease;
+  }
+
+  /* Unlayered, so it beats the `py-3` inside .btn without !important. */
+  .header-cta {
+    padding-block: var(--cta-pad);
+    transition:
+      padding 0.3s ease,
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  /* -------------------------------------------------------------------------
+     Active link — an amber rule rather than a colour change, so it survives
+     the hover colour and stays legible at 12px.
+  ------------------------------------------------------------------------- */
+
+  .nav-link[aria-current='page'] {
+    box-shadow: inset 0 -2px 0 0 currentColor;
+    color: #9e5220; /* amber-deep; raw CSS cannot reach the token, see global.css */
+  }
+
+  .menu-link[aria-current='page'] {
+    color: #9e5220;
+  }
+
+  /* -------------------------------------------------------------------------
+     Hamburger → X.
+
+     Three bars centred on the button, offset by translateY. Opening drops the
+     offsets and rotates the outer two, so they converge into the cross.
+  ------------------------------------------------------------------------- */
+
+  .menu-bar {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1.25rem;
+    height: 1.5px;
+    transform: translate(-50%, -50%) translateY(var(--bar-y, 0));
+    transition:
+      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.2s linear;
+  }
+
+  .menu-bar--top {
+    --bar-y: -6px;
+  }
+
+  .menu-bar--bottom {
+    --bar-y: 6px;
+  }
+
+  [data-menu-open] .menu-bar--top {
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+
+  [data-menu-open] .menu-bar--mid {
+    opacity: 0;
+    transform: translate(-50%, -50%) scaleX(0.3);
+  }
+
+  [data-menu-open] .menu-bar--bottom {
+    transform: translate(-50%, -50%) rotate(-45deg);
+  }
+
+  /* -------------------------------------------------------------------------
+     Drawer.
+
+     `visibility` rather than `display` so the slide can animate; it is delayed
+     until the transform finishes on close and applied immediately on open.
+     visibility:hidden also takes the closed drawer out of the tab order and the
+     accessibility tree, which is what stops keyboard users reaching it before
+     the script has run and set `inert`.
+  ------------------------------------------------------------------------- */
+
+  .menu-backdrop,
+  .menu-panel {
+    position: fixed;
+    top: var(--header-h, 5rem);
+    bottom: 0;
+    visibility: hidden;
+  }
+
+  .menu-backdrop {
+    right: 0;
+    left: 0;
+    z-index: 30;
+    opacity: 0;
+    transition:
+      opacity 0.3s ease,
+      visibility 0s linear 0.3s;
+  }
+
+  .menu-panel {
+    right: 0;
+    z-index: 40;
+    width: min(22rem, 86vw);
+    overflow-y: auto;
+    padding: 1.5rem;
+    box-shadow: -8px 0 24px rgb(18 32 58 / 0.12);
+    transform: translateX(100%);
+    transition:
+      transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+      visibility 0s linear 0.35s;
+  }
+
+  [data-menu-open] .menu-backdrop {
+    visibility: visible;
+    opacity: 1;
+    transition:
+      opacity 0.3s ease,
+      visibility 0s;
+  }
+
+  [data-menu-open] .menu-panel {
+    visibility: visible;
+    transform: translateX(0);
+    transition:
+      transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+      visibility 0s;
+  }
+
+  /* -------------------------------------------------------------------------
+     No-JS fallback. Without the script nothing can open the drawer, so the
+     toggle is hidden and the panel is unpacked inline underneath the bar —
+     the nav stays usable rather than becoming unreachable.
+  ------------------------------------------------------------------------- */
+
+  :global(html:not(.js)) .menu-toggle {
+    display: none;
+  }
+
+  :global(html:not(.js)) .menu-panel {
+    position: static;
+    width: 100%;
+    visibility: visible;
+    box-shadow: none;
+    transform: none;
+  }
+
+  :global(html:not(.js)) [data-site-header] {
+    position: static;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .header-surface,
+    .header-bar,
+    .wordmark,
+    .header-cta,
+    .menu-bar,
+    .menu-backdrop,
+    .menu-panel {
+      transition-duration: 0.01ms;
+      /* The drawer's visibility is normally held back until the slide ends;
+         with no slide to wait for, the delay would just strand it. */
+      transition-delay: 0s;
+    }
+  }
+</style>
+
+<script>
+  const header = document.querySelector<HTMLElement>('[data-site-header]');
+  const toggle = header?.querySelector<HTMLButtonElement>('[data-menu-toggle]');
+  const panel = header?.querySelector<HTMLElement>('[data-menu-panel]');
+  const backdrop = header?.querySelector<HTMLElement>('[data-menu-backdrop]');
+
+  if (header && toggle && panel && backdrop) {
+    /* ---------------------------------------------------------------------
+       Shrink on scroll.
+
+       Two thresholds rather than one: a single 80px line makes the header
+       flicker when a trackpad or a focus jump parks the page right on it.
+    --------------------------------------------------------------------- */
+    const SHRINK_AT = 80;
+    const RESTORE_AT = 56;
+
+    let shrunk = false;
+    let queued = false;
+
+    const syncScrollState = () => {
+      queued = false;
+      const y = window.scrollY;
+
+      if (!shrunk && y > SHRINK_AT) {
+        shrunk = true;
+        header.setAttribute('data-scrolled', '');
+      } else if (shrunk && y < RESTORE_AT) {
+        shrunk = false;
+        header.removeAttribute('data-scrolled');
+      }
+    };
+
+    window.addEventListener(
+      'scroll',
+      () => {
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame(syncScrollState);
+      },
+      { passive: true },
+    );
+
+    // Reloading part-way down a page restores the scroll position without
+    // firing a scroll event, so the initial state has to be read directly.
+    syncScrollState();
+
+    /* ---------------------------------------------------------------------
+       Drawer geometry. The panel and backdrop hang off the bottom of the bar,
+       which changes height as the header shrinks — a ResizeObserver keeps
+       --header-h correct through the transition and across breakpoints.
+    --------------------------------------------------------------------- */
+    const root = document.documentElement;
+    const surface = header.querySelector<HTMLElement>('.header-surface');
+
+    if (surface) {
+      // Set on <html>, not the header: global.css also reads --header-h for
+      // scroll-padding, so in-page anchors stop clear of the bar.
+      const measure = () =>
+        root.style.setProperty('--header-h', `${surface.offsetHeight}px`);
+      new ResizeObserver(measure).observe(surface);
+      measure();
+    }
+
+    /* ---------------------------------------------------------------------
+       Open / close.
+    --------------------------------------------------------------------- */
+    const FOCUSABLE =
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+    const desktop = window.matchMedia('(min-width: 1024px)');
+    let lastFocused: HTMLElement | null = null;
+
+    const isOpen = () => header.hasAttribute('data-menu-open');
+
+    const focusablesInPanel = () =>
+      Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE));
+
+    const onKeydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeMenu();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      // Focus trap. Tab out of either end wraps to the other, and focus that
+      // has escaped the panel entirely (browser chrome, a stray programmatic
+      // focus) is pulled back to the first item.
+      const items = focusablesInPanel();
+      if (items.length === 0) return;
+
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+
+      if (!panel.contains(active)) {
+        event.preventDefault();
+        first.focus();
+      } else if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    // pointerdown, not click: closing on the way down matches how native
+    // menus feel, and it fires before a link inside the drawer navigates.
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (panel.contains(target) || toggle.contains(target)) return;
+      closeMenu();
+    };
+
+    // Arrow consts, not function declarations: a hoisted `function` would lose
+    // the non-null narrowing on the four elements above.
+    const openMenu = () => {
+      if (isOpen()) return;
+
+      lastFocused = document.activeElement as HTMLElement | null;
+      header.setAttribute('data-menu-open', '');
+      toggle.setAttribute('aria-expanded', 'true');
+      panel.removeAttribute('inert');
+
+      // The drawer covers the page; letting it scroll behind leaves the reader
+      // somewhere else when they close it. The padding replaces the width the
+      // scrollbar was occupying, so nothing shifts sideways as it locks.
+      const scrollbar = window.innerWidth - root.clientWidth;
+      if (scrollbar > 0) root.style.paddingRight = `${scrollbar}px`;
+      root.style.overflow = 'hidden';
+
+      focusablesInPanel()[0]?.focus();
+
+      document.addEventListener('keydown', onKeydown);
+      document.addEventListener('pointerdown', onPointerDown);
+    };
+
+    const closeMenu = ({ restoreFocus = true } = {}) => {
+      if (!isOpen()) return;
+
+      header.removeAttribute('data-menu-open');
+      toggle.setAttribute('aria-expanded', 'false');
+      // inert is belt-and-braces over visibility:hidden — it also blocks the
+      // drawer during the 350ms it is still sliding out.
+      panel.setAttribute('inert', '');
+      root.style.overflow = '';
+      root.style.paddingRight = '';
+
+      document.removeEventListener('keydown', onKeydown);
+      document.removeEventListener('pointerdown', onPointerDown);
+
+      // Focus is inside the panel we just made inert, so it has to go
+      // somewhere deliberate rather than falling back to <body>.
+      if (restoreFocus) (lastFocused ?? toggle).focus();
+    };
+
+    panel.setAttribute('inert', '');
+
+    toggle.addEventListener('click', () => {
+      if (isOpen()) closeMenu();
+      else openMenu();
+    });
+
+    backdrop.addEventListener('click', () => closeMenu());
+
+    // Hash links navigate without a page load, so the drawer would otherwise
+    // stay open over the section it just jumped to.
+    panel.addEventListener('click', (event) => {
+      if ((event.target as HTMLElement).closest('a[href]')) {
+        closeMenu({ restoreFocus: false });
+      }
+    });
+
+    // Resizing past the breakpoint hides the drawer with `lg:hidden` while the
+    // trap and the scroll lock would still be live.
+    desktop.addEventListener('change', (event) => {
+      if (event.matches) closeMenu({ restoreFocus: false });
+    });
+  }
+</script>

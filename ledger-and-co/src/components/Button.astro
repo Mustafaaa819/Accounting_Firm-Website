@@ -1,0 +1,30 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+type Props = {
+  /** `on-ink` is the variant for the navy bands — see the note in global.css. */
+  variant?: 'primary' | 'ghost' | 'on-ink';
+  /** Passing href renders an anchor; omitting it renders a real <button>. */
+  href?: string;
+  type?: 'button' | 'submit' | 'reset';
+  class?: string;
+} & Omit<HTMLAttributes<'a'>, 'type'>;
+
+const {
+  variant = 'primary',
+  href,
+  type = 'button',
+  class: className,
+  ...rest
+} = Astro.props;
+
+// The visual work lives in the .btn classes in global.css so Markdown and any
+// CMS-authored content can reach the same styles without importing a component.
+const classes = ['btn', `btn--${variant}`, className].filter(Boolean).join(' ');
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag class={classes} href={href} type={href ? undefined : type} {...rest}>
+  <slot />
+</Tag>

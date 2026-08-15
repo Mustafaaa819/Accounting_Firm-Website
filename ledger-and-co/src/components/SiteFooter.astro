@@ -1,0 +1,177 @@
+---
+import { primaryNav, CLIENT_LOGIN_URL } from '../data/nav';
+import { headOffice as office, offices, GENERAL_EMAIL } from '../data/offices';
+
+const year = new Date().getFullYear();
+
+/*
+ * The address block now comes from src/data/offices.ts — the same array
+ * /contact prints in full — so the number in the footer and the number on the
+ * contact page cannot drift apart. Both are still PLACEHOLDER particulars and
+ * are swapped there, once.
+ *
+ * The registration and audit-registration lines below are statutory for a UK
+ * practice, so they belong in the footer on every page rather than in an
+ * "about" page nobody reads.
+ */
+
+const legal = [
+  'Ledger & Co. LLP is registered in England & Wales, partnership number OC384219.',
+  'Registered to carry on audit work in the UK by the Institute of Chartered Accountants in England and Wales.',
+];
+---
+
+{/*
+  The dark band. This is the only ink-ground surface on the site, which is what
+  makes it read as the end of the page rather than another section.
+*/}
+<footer data-site-footer class="mt-24 bg-ink text-paper">
+  <div class="mx-auto max-w-6xl px-6 py-16 sm:py-20">
+    <div class="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="lg:col-span-1">
+        <a
+          href="/"
+          class="font-display text-xl tracking-display text-paper no-underline"
+          aria-label="Ledger & Co. — home"
+        >
+          Ledger <span class="text-amber-soft">&amp;</span> Co.
+        </a>
+        <p class="mt-4 max-w-prose text-sm text-paper/65">
+          Audit, tax and advisory for founders, funds and family businesses.
+          Established 1998.
+        </p>
+      </div>
+
+      <nav aria-label="Footer">
+        <h2 class="footer-heading">Navigate</h2>
+        <ul class="mt-5 flex list-none flex-col gap-3 pl-0 text-sm">
+          {
+            primaryNav.map((link) => (
+              <li>
+                <a href={link.href} class="footer-link">
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <div>
+        <h2 class="footer-heading">Office</h2>
+        <address class="mt-5 text-sm not-italic text-paper/65">
+          {office.lines.map((line) => <p>{line}</p>)}
+          <p class="mt-3">
+            <a href={office.phoneHref} class="footer-link nums">{office.phone}</a>
+          </p>
+          <p>
+            <a href={`mailto:${GENERAL_EMAIL}`} class="footer-link">{GENERAL_EMAIL}</a>
+          </p>
+        </address>
+
+        {/* The head office is printed in full; the rest are named and sent to
+            /contact, which prints every address, number and mailbox. */}
+        {
+          offices.length > 1 && (
+            <p class="mt-4 text-sm text-paper/65">
+              Also in{' '}
+              {offices
+                .slice(1)
+                .map((other) => other.city)
+                .join(', ')}{' '}
+              — <a href="/contact" class="footer-link">all offices</a>
+            </p>
+          )
+        }
+      </div>
+
+      <div>
+        <h2 class="footer-heading">Clients</h2>
+        <p class="mt-5 text-sm text-paper/65">
+          Records, returns and signed documents live in Exact Online.
+        </p>
+        {/*
+          Same external link-out as the header — rel="noopener noreferrer" for
+          the same reason. `btn--on-ink` rather than `btn--primary`: on the navy
+          ground the amber-deep fill is too close to the background to read.
+        */}
+        <a
+          href={CLIENT_LOGIN_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn btn--on-ink mt-5"
+        >
+          Client Login
+          <svg
+            class="size-3"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M4 2h6v6M10 2 2.5 9.5"></path>
+          </svg>
+          <span class="sr-only">(opens in a new tab)</span>
+        </a>
+
+        {/* /client-portal is not in the primary nav — it is for people who
+            already know what it is — so this is the one route to it that does
+            not require having been sent a link. */}
+        <p class="mt-4 text-sm">
+          <a href="/client-portal" class="footer-link">How the portal works</a>
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-16 border-t border-paper/15 pt-8">
+      <div class="max-w-prose space-y-1 text-xs text-paper/50">
+        {legal.map((line) => <p>{line}</p>)}
+      </div>
+
+      <div
+        class="mt-6 flex flex-col gap-2 text-sm text-paper/65 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <p>&copy; {year} Ledger &amp; Co. All rights reserved.</p>
+        <p class="text-xs uppercase tracking-eyebrow">Chartered Accountants</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  /* Colours are hard-coded here only where a token cannot be reached from raw
+     CSS (see the note in global.css). Everything reachable through a utility
+     is set in the markup instead. */
+
+  .footer-heading {
+    /* h2 in base picks up font-display; on the dark band it wants to read as a
+       small label, so the eyebrow treatment wins. */
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #e4a579; /* amber-soft — amber-deep is unreadable on ink */
+  }
+
+  /* Structural links, so no prose underline until hover. */
+  .footer-link {
+    color: rgb(246 243 236 / 0.65);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .footer-link:hover {
+    color: #f6f3ec; /* paper */
+    text-decoration: none;
+  }
+
+  /* The global focus outline is amber-deep, tuned for the paper ground — on ink
+     it all but disappears. Amber-soft keeps the same cue visible here. */
+  [data-site-footer] :focus-visible {
+    outline-color: #e4a579;
+  }
+</style>

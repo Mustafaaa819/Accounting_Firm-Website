@@ -1,0 +1,807 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ScrollReveal from '../components/ScrollReveal.astro';
+import PlaceholderImage from '../components/PlaceholderImage.astro';
+import { offices, headOffice, GENERAL_EMAIL } from '../data/offices';
+import { CLIENT_LOGIN_URL } from '../data/nav';
+import {
+  CONTACT_FORM_NAME,
+  formBackend,
+  formspreeEndpoint,
+  formspreeMisconfigured,
+  honeypotField,
+} from '../data/contact-form';
+
+/*
+ * A misconfigured endpoint would otherwise build a form that silently posts
+ * into nothing. Warning at build time is the only place anyone will see it —
+ * by the time it is deployed, the failure looks like "nobody enquired".
+ */
+if (formspreeMisconfigured) {
+  console.warn(
+    '[contact] PUBLIC_FORMSPREE_ENDPOINT is set but is not a Formspree form URL ' +
+      '(expected https://formspree.io/f/xxxxxxxx). Falling back to Netlify Forms.',
+  );
+}
+
+/*
+ * Backend wiring, decided at build time so the rendered HTML carries only the
+ * attributes of the backend actually in use.
+ *
+ * Netlify: `data-netlify` is what its build step scans for; the honeypot has to
+ * be declared here as well as rendered, or a filled-in field is just a field.
+ * Formspree: a plain `action`, which is also what makes the no-JS path work —
+ * the browser posts the form natively and Formspree renders its own receipt.
+ */
+const backendAttrs =
+  formBackend === 'formspree'
+    ? { action: formspreeEndpoint }
+    : { 'data-netlify': 'true', 'data-netlify-honeypot': honeypotField };
+
+/*
+ * The office selector. Built from the same array the addresses below print, so
+ * opening a third office adds an option here without anyone remembering to.
+ * The last option exists because a caller who does not know our geography
+ * should not have to guess — and "either" routes to the front desk in both.
+ */
+const officeOptions = [
+  ...offices.map((office) => ({
+    value: office.id,
+    label: `${office.city} — ${office.lines[0]}`,
+  })),
+  { value: 'either', label: 'Whichever is nearest — you decide' },
+];
+
+// What happens after the send. Printed because "we will be in touch" is the
+// one promise every firm's contact page makes and almost none of them keep.
+const afterwards = [
+  {
+    step: '01',
+    title: 'A person reads it',
+    body: 'Enquiries go to the front desk in the office you picked, and are read the same working day. Nothing here is triaged by software.',
+  },
+  {
+    step: '02',
+    title: 'A partner replies within one working day',
+    body: 'Not a coordinator, and not a calendar link. If your enquiry is plainly not our work, you will get that answer instead — usually with two names who do it properly.',
+  },
+  {
+    step: '03',
+    title: 'An hour, at no charge',
+    body: 'The first meeting is with the partner who would run the engagement. You leave it with a written scope and a fixed price, whether or not you take it further.',
+  },
+];
+---
+
+<BaseLayout
+  title="Contact — Ledger & Co."
+  description="Talk to a partner at Ledger & Co. — offices in London and Manchester, a reply within one working day, and a first consultation at no charge."
+>
+  {/* ---------------------------------------------------------------------
+      1. Page head. Same shape as the other section pages — title left,
+      standfirst hung in the right-hand columns.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 pb-8 pt-16 sm:pt-24">
+    <ScrollReveal y={12} class="lg:grid lg:grid-cols-12 lg:gap-8">
+      <div class="lg:col-span-7">
+        <p class="eyebrow">Contact</p>
+
+        <h1 class="mt-6 text-4xl">
+          Tell us what the problem is. A partner will answer.
+        </h1>
+
+        <div class="rule-double mt-10"></div>
+      </div>
+
+      <p class="mt-8 text-lg text-ink-soft lg:col-span-4 lg:col-start-9 lg:mt-0">
+        Two offices, one working day for a reply, and a first hour that costs
+        nothing. If you would rather just ring, the numbers are below and
+        somebody picks up.
+      </p>
+    </ScrollReveal>
+  </section>
+
+  {/* ---------------------------------------------------------------------
+      2. The form, with the direct routes beside it.
+
+      Form in columns 1–7, everything you would use instead of the form in
+      9–12 — because a good half of the people on this page do not want to
+      fill anything in.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 py-12 sm:py-16">
+    <div class="lg:grid lg:grid-cols-12 lg:gap-16">
+      <ScrollReveal class="lg:col-span-7">
+        <h2 class="text-3xl">Send us the details.</h2>
+        <p class="mt-5 max-w-prose text-ink-soft">
+          Everything except the phone number is needed. The more concrete you
+          are about the problem, the more useful the first reply is.
+        </p>
+
+        {/* -------------------------------------------------------------
+            Success state. Replaces the form rather than sitting above it,
+            so the page cannot be read as "sent, and also still to send".
+            `tabindex="-1"` because the script moves focus here — screen
+            reader users are otherwise left on a submit button that no
+            longer exists on screen.
+        ------------------------------------------------------------- */}
+        <div
+          data-form-success
+          hidden
+          tabindex="-1"
+          class="mt-10 border-t-2 border-amber bg-paper-warm p-8"
+        >
+          <p class="eyebrow">Sent</p>
+          <h3 class="mt-3 text-2xl">Thank you — it is with us.</h3>
+          <p class="mt-4 max-w-prose text-ink-soft">
+            A copy has gone to the office you picked and it will be read today.
+            You will hear from a partner within one working day; if it is
+            urgent, ring{' '}
+            <a href={headOffice.phoneHref} class="nums">{headOffice.phone}</a> and
+            say that you have just sent this.
+          </p>
+        </div>
+
+        {/* -------------------------------------------------------------
+            The form.
+
+            `method="POST"` and a real action/backend declaration are on the
+            element itself, so the form still submits with JavaScript off —
+            the script below upgrades it to a fetch and takes over the error
+            and success states, but it is not what makes it work.
+
+            Validation attributes stay in the markup for that same no-JS
+            path; the script adds `novalidate` at runtime so its own inline
+            messages replace the browser's bubbles rather than fighting them.
+        ------------------------------------------------------------- */}
+        <form
+          data-contact-form
+          data-backend={formBackend}
+          data-endpoint={formspreeEndpoint || undefined}
+          name={CONTACT_FORM_NAME}
+          method="POST"
+          {...backendAttrs}
+          class="mt-10"
+        >
+          {
+            formBackend === 'netlify' && (
+              /* Netlify keys the submission on this field. Its own build step
+                 injects one for native posts; the fetch path below sends the
+                 body itself, so it has to be in the markup to be included. */
+              <input type="hidden" name="form-name" value={CONTACT_FORM_NAME} />
+            )
+          }
+
+          {
+            formBackend === 'formspree' && (
+              /* Sets the subject line of the notification email, so the inbox
+                 does not fill with "New submission from your form". */
+              <input
+                type="hidden"
+                name="_subject"
+                value="Website enquiry — ledgerandco.example"
+              />
+            )
+          }
+
+          {/* The honeypot. Hidden from sight AND from the accessibility tree,
+              and taken out of the tab order — a screen reader user who filled
+              this in would have their enquiry silently binned. */}
+          <p class="hidden" aria-hidden="true">
+            <label>
+              Leave this field empty
+              <input
+                type="text"
+                name={honeypotField}
+                tabindex="-1"
+                autocomplete="off"
+              />
+            </label>
+          </p>
+
+          {/* Submission failures and the validation summary. Focus is moved
+              here rather than the panel being given `role="alert"` — with both,
+              a screen reader announces the same sentence twice. Focus is the
+              more reliable half, and it also puts the reader at the top of the
+              form where the marked fields are. */}
+          <div
+            data-form-error
+            hidden
+            tabindex="-1"
+            class="mb-8 border-l-2 border-amber-deep bg-paper-warm p-6"
+          >
+            <p class="font-medium text-ink" data-form-error-text></p>
+            <p class="mt-3 text-sm text-ink-soft">
+              Nothing has been lost — the box below still has what you wrote.
+              If it keeps failing, email{' '}
+              <a href={`mailto:${GENERAL_EMAIL}`}>{GENERAL_EMAIL}</a> or ring{' '}
+              <a href={headOffice.phoneHref} class="nums">{headOffice.phone}</a>.
+            </p>
+          </div>
+
+          <div class="grid gap-6 sm:grid-cols-2">
+            <div>
+              <label for="contact-name">Your name</label>
+              <input
+                id="contact-name"
+                name="name"
+                type="text"
+                required
+                autocomplete="name"
+                data-validate
+                aria-describedby="contact-name-error"
+              />
+              <p id="contact-name-error" class="field-error" hidden></p>
+            </div>
+
+            <div>
+              <label for="contact-company">Company <span class="optional">(optional)</span></label>
+              <input
+                id="contact-company"
+                name="company"
+                type="text"
+                autocomplete="organization"
+              />
+            </div>
+
+            <div>
+              <label for="contact-email">Email</label>
+              <input
+                id="contact-email"
+                name="email"
+                type="email"
+                required
+                autocomplete="email"
+                inputmode="email"
+                data-validate
+                aria-describedby="contact-email-error"
+              />
+              <p id="contact-email-error" class="field-error" hidden></p>
+            </div>
+
+            <div>
+              <label for="contact-phone">Phone <span class="optional">(optional)</span></label>
+              <input
+                id="contact-phone"
+                name="phone"
+                type="tel"
+                autocomplete="tel"
+                inputmode="tel"
+                data-validate
+                aria-describedby="contact-phone-hint contact-phone-error"
+              />
+              <p id="contact-phone-hint" class="field-hint">
+                Only if you would rather be rung than emailed.
+              </p>
+              <p id="contact-phone-error" class="field-error" hidden></p>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label for="contact-office">Which office</label>
+              <select
+                id="contact-office"
+                name="office"
+                required
+                data-validate
+                aria-describedby="contact-office-error"
+              >
+                <option value="">Choose an office</option>
+                {
+                  officeOptions.map((option) => (
+                    <option value={option.value}>{option.label}</option>
+                  ))
+                }
+              </select>
+              <p id="contact-office-error" class="field-error" hidden></p>
+            </div>
+
+            <div class="sm:col-span-2">
+              <label for="contact-message">What do you need?</label>
+              <textarea
+                id="contact-message"
+                name="message"
+                rows="6"
+                required
+                minlength="20"
+                data-validate
+                aria-describedby="contact-message-hint contact-message-error"
+              ></textarea>
+              <p id="contact-message-hint" class="field-hint">
+                Year end, turnover, how the books are kept now, and what has
+                gone wrong — whichever of those you know.
+              </p>
+              <p id="contact-message-error" class="field-error" hidden></p>
+            </div>
+          </div>
+
+          <div class="mt-8 flex items-start gap-3">
+            <input
+              id="contact-consent"
+              name="consent"
+              type="checkbox"
+              value="yes"
+              required
+              class="mt-1.5 shrink-0"
+              data-validate
+              aria-describedby="contact-consent-error"
+            />
+            <div>
+              {/* The label is the whole sentence, so the whole sentence is the
+                  click target — a 16px box on its own is not one. */}
+              <label for="contact-consent" class="mb-0 font-normal text-ink-soft">
+                I am happy for Ledger &amp; Co. to hold these details in order
+                to answer this enquiry. We do not add enquirers to a mailing
+                list and we do not pass anything on.
+              </label>
+              <p id="contact-consent-error" class="field-error" hidden></p>
+            </div>
+          </div>
+
+          <div class="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
+            <button type="submit" class="btn btn--primary" data-submit>
+              <span data-submit-label>Send enquiry</span>
+            </button>
+            <p class="text-sm text-ink-muted">
+              Or ring {headOffice.city} on{' '}
+              <a href={headOffice.phoneHref} class="nums">{headOffice.phone}</a>.
+            </p>
+          </div>
+        </form>
+      </ScrollReveal>
+
+      {/* -----------------------------------------------------------------
+          The column for people who will not use a form.
+      ----------------------------------------------------------------- */}
+      <ScrollReveal delay={0.1} class="mt-16 lg:col-span-4 lg:col-start-9 lg:mt-3">
+        <h2 class="font-sans text-xs font-medium uppercase tracking-eyebrow text-ink-muted">
+          Direct
+        </h2>
+
+        <dl class="mt-5">
+          {
+            offices.map((office) => (
+              <div class="border-t border-ink/15 py-5 first:border-t-0 first:pt-0">
+                <dt class="font-display text-lg text-ink">{office.city}</dt>
+                <dd>
+                  <address class="mt-2 text-sm not-italic text-ink-soft">
+                    {office.lines.map((line) => (
+                      <p>{line}</p>
+                    ))}
+                    <p class="mt-3">
+                      <a href={office.phoneHref} class="nums">
+                        {office.phone}
+                      </a>
+                    </p>
+                    <p>
+                      <a href={`mailto:${office.email}`}>{office.email}</a>
+                    </p>
+                  </address>
+                  <p class="mt-3 text-xs text-ink-muted">{office.hours}</p>
+                </dd>
+              </div>
+            ))
+          }
+
+          <div class="border-t border-ink/15 py-5">
+            <dt class="font-display text-lg text-ink">Anything general</dt>
+            <dd class="mt-2 text-sm text-ink-soft">
+              <p>
+                <a href={`mailto:${GENERAL_EMAIL}`}>{GENERAL_EMAIL}</a>
+              </p>
+              <p class="mt-2 text-xs text-ink-muted">
+                Read by the front desk in both offices.
+              </p>
+            </dd>
+          </div>
+        </dl>
+
+        <div class="rule-double mt-1"></div>
+
+        {/* Existing clients are the other half of this page's traffic, and
+            they want the portal, not a form. Sent there explicitly rather
+            than left to find the header button. */}
+        <div class="mt-10 border-l-2 border-amber pl-6">
+          <h3 class="font-sans text-xs font-medium uppercase tracking-eyebrow text-ink-muted">
+            Already a client?
+          </h3>
+          <p class="mt-4 text-sm text-ink-soft">
+            Documents, returns and payslips are in Exact Online — not in this
+            form. <a href="/client-portal">How the portal works</a>, or go
+            straight to{' '}
+            <a href={CLIENT_LOGIN_URL} target="_blank" rel="noopener noreferrer">
+              Client Login<span class="sr-only"> (opens in a new tab)</span></a
+            >.
+          </p>
+        </div>
+      </ScrollReveal>
+    </div>
+  </section>
+
+  {/* ---------------------------------------------------------------------
+      3. What happens next. Three ruled steps, numbered — the same statement
+      treatment as the rest of the site rather than three icon cards.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 py-12 sm:py-16">
+    <ScrollReveal class="border-t border-ink/15 pt-16">
+      <p class="eyebrow">After you send it</p>
+      <h2 class="mt-3 max-w-2xl text-3xl">
+        Three things happen, and none of them is an autoresponder.
+      </h2>
+    </ScrollReveal>
+
+    <ScrollReveal
+      as="ol"
+      stagger={0.08}
+      class="mt-12 grid list-none grid-cols-1 gap-x-16 gap-y-8 pl-0 lg:grid-cols-3"
+    >
+      {
+        afterwards.map((item) => (
+          <li class="border-t border-ink/25 pt-5">
+            <p class="nums font-display text-lg text-amber-deep">{item.step}</p>
+            <h3 class="mt-3 text-xl">{item.title}</h3>
+            <p class="mt-3 max-w-prose text-ink-soft">{item.body}</p>
+          </li>
+        ))
+      }
+    </ScrollReveal>
+
+    <div class="rule-double mt-12"></div>
+  </section>
+
+  {/* ---------------------------------------------------------------------
+      4. Where we are. Map blocks are placeholders on purpose — an embedded
+      third-party map is a tracking iframe and a layout shift, and it is not
+      going in until somebody decides which provider the firm is prepared to
+      send its visitors' IP addresses to.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 pb-24">
+    <ScrollReveal>
+      <p class="eyebrow">Where we are</p>
+      <h2 class="mt-3 text-3xl">Both doors, and how to find them.</h2>
+    </ScrollReveal>
+
+    <ScrollReveal
+      as="ul"
+      stagger={0.1}
+      class="mt-12 grid list-none grid-cols-1 gap-x-12 gap-y-16 pl-0 sm:grid-cols-2"
+    >
+      {
+        offices.map((office) => (
+          <li>
+            <PlaceholderImage
+              label={`Map — ${office.city}, ${office.lines[0]}. Static image, no third-party embed.`}
+              width={800}
+              height={600}
+            />
+
+            <h3 class="mt-6 text-xl">{office.city}</h3>
+            <p class="eyebrow mt-2">{office.role}</p>
+
+            <address class="mt-4 not-italic text-ink-soft">
+              {office.lines.map((line) => (
+                <p>{line}</p>
+              ))}
+            </address>
+
+            <p class="mt-4 max-w-prose text-sm text-ink-soft">
+              {office.directions}
+            </p>
+
+            <p class="mt-4 text-sm">
+              <a href={office.phoneHref} class="nums">{office.phone}</a>
+              <span class="text-ink-muted"> &middot; </span>
+              <a href={`mailto:${office.email}`}>{office.email}</a>
+            </p>
+          </li>
+        ))
+      }
+    </ScrollReveal>
+  </section>
+</BaseLayout>
+
+<style>
+  /* Hint and error text under a control. Both are 12px and sit tight to the
+     field; the error takes amber-deep, which is the only accent in the palette
+     that clears 4.5:1 on paper at this size. There is no red in the palette
+     and one is not being invented for a form. */
+  .field-hint {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: #5a6780; /* ink-muted — raw CSS cannot reach the token, see global.css */
+  }
+
+  .field-error {
+    margin-top: 0.5rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    font-weight: 500;
+    color: #9e5220; /* amber-deep */
+  }
+
+  /* The error message is the second cue, not the only one: the invalid ring
+     from global.css is the first, and this rule adds a third that survives
+     both a monochrome print and a red-green colour deficiency. */
+  .field-error::before {
+    content: '↑ ';
+  }
+
+  /* `label` is 14px medium by default, which is right for a field label and
+     wrong for a sentence of consent copy sitting beside a checkbox. */
+  .optional {
+    font-weight: 400;
+    color: #5a6780; /* ink-muted */
+  }
+</style>
+
+<script>
+  /* -------------------------------------------------------------------------
+     Contact form: validation, submission, and the two end states.
+
+     The form works without any of this — it is a real POST to a real backend,
+     declared in the markup. What this adds is inline validation with the
+     firm's own wording, a submission that does not throw the page away, and an
+     error state for the case the backend is down, which a native post handles
+     by showing the visitor somebody else's error page.
+  ------------------------------------------------------------------------- */
+
+  type Control = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+
+  const form = document.querySelector<HTMLFormElement>('[data-contact-form]');
+  const successPanel = document.querySelector<HTMLElement>('[data-form-success]');
+  const errorPanel = document.querySelector<HTMLElement>('[data-form-error]');
+  const errorText = document.querySelector<HTMLElement>('[data-form-error-text]');
+  const submitButton = document.querySelector<HTMLButtonElement>('[data-submit]');
+  const submitLabel = document.querySelector<HTMLElement>('[data-submit-label]');
+
+  if (form && successPanel && errorPanel && errorText && submitButton && submitLabel) {
+    // Native validation off, but only now — with JS unavailable the markup's
+    // required/type/minlength attributes are the whole safety net and must stay
+    // in force.
+    form.setAttribute('novalidate', '');
+
+    /* -----------------------------------------------------------------------
+       Rules.
+
+       Loose on purpose. The only questions worth asking in a browser are "can
+       we reply to this" and "is there enough here to act on" — anything
+       stricter rejects real people. `+44 (0)161 496 0180 ext 12` is a phone
+       number, and an address at a domain we have never heard of is an email.
+    ----------------------------------------------------------------------- */
+    const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    const PHONE = /^[+()\d][+()\-.\s\d]{6,}$/;
+    const MESSAGE_MIN = 20;
+
+    const RULES: Record<string, (control: Control) => string | null> = {
+      name: (control) =>
+        control.value.trim().length >= 2
+          ? null
+          : 'Tell us who you are — a first name is enough.',
+
+      email: (control) => {
+        const value = control.value.trim();
+        if (!value) return 'We need an email address to reply to.';
+        return EMAIL.test(value)
+          ? null
+          : 'That does not look like an email address — check for a missing @ or a typo in the domain.';
+      },
+
+      // Optional, so an empty value is valid; a filled one still has to be
+      // dialable, because a mistyped number is worse than none.
+      phone: (control) => {
+        const value = control.value.trim();
+        if (!value) return null;
+        return PHONE.test(value)
+          ? null
+          : 'Digits, spaces and + only — or leave it blank and we will email instead.';
+      },
+
+      office: (control) =>
+        control.value
+          ? null
+          : 'Pick an office, or the last option if you would rather we chose.',
+
+      message: (control) => {
+        const value = control.value.trim();
+        if (!value) return 'Tell us what you need — two lines is plenty.';
+        return value.length >= MESSAGE_MIN
+          ? null
+          : 'A little more than that, please — two lines is plenty.';
+      },
+
+      consent: (control) =>
+        (control as HTMLInputElement).checked
+          ? null
+          : 'We need this before we can hold your details.',
+    };
+
+    const controls = Array.from(form.querySelectorAll<Control>('[data-validate]'));
+
+    /* -----------------------------------------------------------------------
+       Per-field error display.
+    ----------------------------------------------------------------------- */
+    const errorFor = (control: Control) =>
+      document.getElementById(`${control.id}-error`);
+
+    const setFieldError = (control: Control, message: string | null) => {
+      const node = errorFor(control);
+
+      if (message) {
+        control.setAttribute('aria-invalid', 'true');
+        if (node) {
+          node.textContent = message;
+          node.hidden = false;
+        }
+      } else {
+        control.removeAttribute('aria-invalid');
+        if (node) {
+          node.hidden = true;
+          node.textContent = '';
+        }
+      }
+    };
+
+    const validate = (control: Control): boolean => {
+      const rule = RULES[control.name];
+      if (!rule) return true;
+
+      const message = rule(control);
+      setFieldError(control, message);
+      return message === null;
+    };
+
+    /* Re-validation is armed only after the first submit attempt. Validating
+       as someone types their email for the first time tells them it is wrong
+       before they have finished writing it, which is not help. */
+    let submitted = false;
+
+    controls.forEach((control) => {
+      const revalidate = () => {
+        if (submitted) validate(control);
+      };
+
+      // `change` covers the select and the checkbox; `input` and `blur` cover
+      // the text fields, so a corrected field clears its error as it is fixed
+      // rather than at the next submit.
+      control.addEventListener('input', revalidate);
+      control.addEventListener('change', revalidate);
+      control.addEventListener('blur', revalidate);
+    });
+
+    /* -----------------------------------------------------------------------
+       Panels.
+    ----------------------------------------------------------------------- */
+    const showError = (message: string) => {
+      errorText.textContent = message;
+      errorPanel.hidden = false;
+      errorPanel.focus();
+    };
+
+    const hideError = () => {
+      errorPanel.hidden = true;
+      errorText.textContent = '';
+    };
+
+    const setBusy = (busy: boolean) => {
+      submitButton.disabled = busy;
+      form.setAttribute('aria-busy', String(busy));
+      submitLabel.textContent = busy ? 'Sending…' : 'Send enquiry';
+    };
+
+    /* -----------------------------------------------------------------------
+       Submission.
+
+       Netlify wants a urlencoded body carrying `form-name`, posted anywhere on
+       the site; Formspree wants the FormData at its own endpoint with an
+       Accept header that switches it from a redirect to JSON. Everything else
+       — the timeout, the two end states — is shared.
+    ----------------------------------------------------------------------- */
+    const TIMEOUT_MS = 15000;
+
+    const encode = (data: FormData) => {
+      const params = new URLSearchParams();
+      for (const [key, value] of data.entries()) {
+        if (typeof value === 'string') params.append(key, value);
+      }
+      return params.toString();
+    };
+
+    /** Formspree returns `{ errors: [{ message, field }] }` on a rejection.
+     *  Worth reading: "form not found" and "this form is disabled" are the two
+     *  most likely first-deploy failures, and both are actionable. */
+    const readFailure = async (response: Response): Promise<string> => {
+      try {
+        const body = await response.clone().json();
+        const first = body?.errors?.[0]?.message;
+        if (typeof first === 'string' && first) return first;
+      } catch {
+        // Not JSON — an HTML error page, or nothing at all.
+      }
+      return `The form service refused the message (error ${response.status}).`;
+    };
+
+    const send = async (): Promise<void> => {
+      const backend = form.dataset.backend;
+      const endpoint = form.dataset.endpoint ?? '';
+      const data = new FormData(form);
+
+      // AbortSignal.timeout() is not in every browser this site will meet, so
+      // the controller is wired by hand.
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+      try {
+        const response =
+          backend === 'formspree'
+            ? await fetch(endpoint, {
+                method: 'POST',
+                headers: { Accept: 'application/json' },
+                body: data,
+                signal: controller.signal,
+              })
+            : await fetch('/', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                },
+                body: encode(data),
+                signal: controller.signal,
+              });
+
+        if (!response.ok) throw new Error(await readFailure(response));
+      } finally {
+        window.clearTimeout(timer);
+      }
+    };
+
+    let sending = false;
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (sending) return;
+
+      submitted = true;
+      hideError();
+
+      // Every field is validated, not just up to the first failure — showing
+      // one error, then another after it is fixed, is how a form gets
+      // abandoned.
+      const invalid = controls.filter((control) => !validate(control));
+
+      if (invalid.length > 0) {
+        showError(
+          invalid.length === 1
+            ? 'One field needs another look — it is marked below.'
+            : `${invalid.length} fields need another look — they are marked below.`,
+        );
+        invalid[0].focus();
+        return;
+      }
+
+      sending = true;
+      setBusy(true);
+
+      try {
+        await send();
+
+        // Replace, do not append: the form goes, the receipt arrives, and
+        // focus follows it so a screen reader is not left on a dead button.
+        form.hidden = true;
+        successPanel.hidden = false;
+        successPanel.focus();
+      } catch (error) {
+        const aborted = error instanceof DOMException && error.name === 'AbortError';
+
+        showError(
+          aborted
+            ? 'That took too long to send — the connection may have dropped.'
+            : error instanceof Error && error.message
+              ? error.message
+              : 'The message could not be sent.',
+        );
+      } finally {
+        sending = false;
+        setBusy(false);
+      }
+    });
+  }
+</script>

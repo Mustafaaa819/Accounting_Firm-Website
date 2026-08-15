@@ -1,0 +1,304 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Button from '../components/Button.astro';
+import ScrollReveal from '../components/ScrollReveal.astro';
+import LedgerSpread from '../components/LedgerSpread.astro';
+import DenseTextSection from '../components/DenseTextSection.astro';
+import PlaceholderImage from '../components/PlaceholderImage.astro';
+
+// The schema's editorial `order`, not filesystem order — so adding a service
+// file cannot silently reshuffle the list, and the homepage and /services show
+// the five engagements in the same sequence.
+const services = (await getCollection('services')).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+
+// Seniority, from the schema's `order` — the same sequence /who-we-are uses, so
+// the three shown here are the three at the top of that page rather than
+// whichever files the loader happened to read first.
+const partners = (await getCollection('team'))
+  .sort((a, b) => a.data.order - b.data.order)
+  .slice(0, 3);
+
+const latestNews = (await getCollection('news'))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+  .slice(0, 3);
+
+// Built once at build time and reused; constructing a formatter per item is the
+// expensive part of Intl, not the formatting.
+const newsDate = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+---
+
+<BaseLayout title="Ledger & Co. — Chartered Accountants">
+  {/* ---------------------------------------------------------------------
+      1. Hero.
+
+      Asymmetric on purpose: the copy takes columns 1–7 and the image sits in
+      9–12, dropped 6rem so the two columns never share a baseline. A centred
+      hero would put the headline, the line under it and the buttons on one
+      axis — which is the layout every SaaS landing page already uses.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 pb-24 pt-16 sm:pt-24">
+    <div class="lg:grid lg:grid-cols-12 lg:gap-8">
+      <ScrollReveal y={12} class="lg:col-span-7">
+        <p class="eyebrow">Chartered accountants &middot; Established 1998</p>
+
+        <h1 class="mt-6 text-5xl">
+          Accounting, tax, and payroll for businesses that outgrew a spreadsheet.
+        </h1>
+
+        {/* The double rule — the mark an accountant puts under a checked total. */}
+        <div class="rule-double mt-10"></div>
+
+        <p class="mt-10 max-w-prose text-xl text-ink-soft">
+          One partner-led team for the year-end accounts, the corporation tax
+          return and the monthly payroll — so nothing falls through the gap
+          between three sets of advisers.
+        </p>
+
+        <div class="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
+          <Button href="/contact">Book a consultation</Button>
+          <a href="/services" class="text-sm">See our services</a>
+        </div>
+      </ScrollReveal>
+
+      <ScrollReveal delay={0.15} class="mt-14 lg:col-span-4 lg:col-start-9 lg:mt-24">
+        <PlaceholderImage
+          label="The partners' floor — desks, files, daylight. Shot on location, not stock."
+          width={640}
+          height={800}
+        />
+        <p class="mt-4 text-xs text-ink-muted">
+          Portrait crop, above the fold on lg and up.
+        </p>
+      </ScrollReveal>
+    </div>
+  </section>
+
+  {/* ---------------------------------------------------------------------
+      2. Services, from the content collection.
+  --------------------------------------------------------------------- */}
+  <LedgerSpread
+    eyebrow="Services"
+    title="What we take on."
+    note="Each engagement is priced as a fixed scope. If it changes, we tell you before the work starts, not on the invoice."
+  >
+    {
+      services.length > 0 ? (
+        services.map((service) => (
+          <article class="bg-paper p-6 sm:p-8">
+            <h3 class="text-xl">{service.data.title}</h3>
+            <p class="mt-3 text-ink-muted">{service.data.summary}</p>
+            <a href={`/services/${service.data.slug}`} class="mt-4 inline-block text-sm">
+              Read the scope
+            </a>
+          </article>
+        ))
+      ) : (
+        /* Empty state. The collection is authored in Markdown and will be thin
+           on a fresh checkout, so the section has to stand on its own rather
+           than collapse to a heading over nothing. */
+        <article class="bg-paper p-6 sm:p-8">
+          <h3 class="text-xl">The service pages are being written.</h3>
+          <p class="mt-3 max-w-prose text-ink-muted">
+            Audit and assurance, corporation and personal tax, payroll, and
+            transaction support are all live engagements — the written scopes
+            are simply not published yet.
+          </p>
+          <a href="/contact" class="mt-4 inline-block text-sm">
+            Ask us what an engagement would cover
+          </a>
+        </article>
+      )
+    }
+  </LedgerSpread>
+
+  {/* ---------------------------------------------------------------------
+      3. Why this firm — editorial, not a row of icon cards.
+  --------------------------------------------------------------------- */}
+  <DenseTextSection
+    eyebrow="Why this firm"
+    title="You are buying judgement, not bookkeeping."
+    lead="Software has taken the arithmetic off the table. What is left is the part that was always hard: deciding what a number means, and being able to defend that decision eighteen months later."
+  >
+    <p slot="note">
+      Partner-led means partner-signed. Every file that leaves this office has a
+      named partner on it.
+    </p>
+
+    <p>
+      Most firms this size run on leverage — a partner wins the work, a junior
+      does it, and the partner sees the file for the first time the week it is
+      due. It is a defensible model right up to the point where something is
+      wrong, at which stage nobody in the chain has enough of the picture to
+      say so quickly.
+    </p>
+    <p>
+      We staff the other way round. The partner who scopes your engagement does
+      the technical review, takes the awkward call from your bank, and is the
+      one sitting opposite you when a buyer's advisers start pulling at the
+      numbers. That costs more per hour and less per year.
+    </p>
+
+    {/* Pull-quote weight, but the figure carries it — the same amber rule as a
+        blockquote, so the two read as the same class of interruption. */}
+    <figure class="my-10 border-l-2 border-amber pl-6">
+      <p class="nums font-display text-5xl text-ink">31 days</p>
+      <figcaption class="max-w-prose text-sm text-ink-muted">
+        Median turnaround from complete records to signed audit opinion, across
+        engagements closed in 2025. The comparable figure for firms in our
+        revenue band is 58.
+      </figcaption>
+    </figure>
+
+    <h3>What that buys you in practice</h3>
+    <p>
+      Year-end stops being a six-week negotiation over missing paperwork. Filing
+      deadlines stop being the thing that dictates when you can close a round.
+      And the file you hand to a buyer, a bank or a regulator survives first
+      contact with their advisers — which is the only test of an audit that has
+      ever mattered.
+    </p>
+  </DenseTextSection>
+
+  {/* ---------------------------------------------------------------------
+      4. Team teaser. Compact by design — the full bench lives on /who-we-are.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 py-24">
+    <ScrollReveal class="flex flex-wrap items-end justify-between gap-6">
+      <div>
+        <p class="eyebrow">Who we are</p>
+        <h2 class="mt-3 text-3xl">The names on the door do the work.</h2>
+      </div>
+      <a href="/who-we-are" class="text-sm">Meet the whole team</a>
+    </ScrollReveal>
+
+    {
+      partners.length > 0 && (
+        <ScrollReveal
+          as="ul"
+          stagger={0.08}
+          class="mt-12 grid list-none gap-8 pl-0 sm:grid-cols-3"
+        >
+          {partners.map((partner) => (
+            <li>
+              {/* `partner.data.photo` already holds the headshot path — swap the
+                  placeholder for an <img> once the shoot is delivered. */}
+              <PlaceholderImage
+                label={`Headshot — ${partner.data.name}`}
+                width={600}
+                height={750}
+              />
+              <p class="mt-4 font-display text-lg text-ink">{partner.data.name}</p>
+              <p class="mt-1 text-sm text-ink-muted">{partner.data.role}</p>
+            </li>
+          ))}
+        </ScrollReveal>
+      )
+    }
+
+    <div class="rule-double mt-16"></div>
+  </section>
+
+  {/* ---------------------------------------------------------------------
+      5. News teaser — three most recent entries.
+  --------------------------------------------------------------------- */}
+  <section class="mx-auto max-w-6xl px-6 pb-24">
+    <ScrollReveal class="flex flex-wrap items-end justify-between gap-6">
+      <div>
+        <p class="eyebrow">Practice notes</p>
+        <h2 class="mt-3 text-3xl">What we are telling clients this quarter.</h2>
+      </div>
+      <a href="/news" class="text-sm">All practice notes</a>
+    </ScrollReveal>
+
+    {
+      latestNews.length > 0 ? (
+        <ScrollReveal as="ol" stagger={0.08} class="mt-12 list-none pl-0">
+          {latestNews.map((entry) => (
+            <li class="border-t border-ink/10 py-8 first:border-t-0 first:pt-0 lg:grid lg:grid-cols-[10rem_1fr] lg:gap-8">
+              <p class="text-xs uppercase tracking-eyebrow text-ink-muted">
+                <time datetime={entry.data.date.toISOString().slice(0, 10)}>
+                  {newsDate.format(entry.data.date)}
+                </time>
+              </p>
+              <div class="mt-3 lg:mt-0">
+                <h3 class="text-xl">
+                  <a href={`/news/${entry.id}`} class="no-underline hover:text-amber-deep">
+                    {entry.data.title}
+                  </a>
+                </h3>
+                <p class="mt-3 max-w-prose text-ink-muted">{entry.data.excerpt}</p>
+              </div>
+            </li>
+          ))}
+        </ScrollReveal>
+      ) : (
+        <ScrollReveal class="mt-12 border-t border-ink/10 pt-8">
+          <p class="max-w-prose text-ink-muted">
+            The next practice note is in draft. We publish when there is
+            something worth saying, which is roughly quarterly.
+          </p>
+        </ScrollReveal>
+      )
+    }
+  </section>
+
+  {/* ---------------------------------------------------------------------
+      6. Closing band. Full-bleed ink; the reveal is on the contents rather
+      than the band itself, so the navy never slides and leaves a paper sliver
+      along its top edge.
+  --------------------------------------------------------------------- */}
+  <section class="cta-band bg-ink text-paper">
+    <ScrollReveal class="mx-auto max-w-6xl px-6 py-20 sm:py-28">
+      <div class="lg:grid lg:grid-cols-12 lg:items-end lg:gap-8">
+        <div class="lg:col-span-7">
+          <p class="text-xs font-medium uppercase tracking-eyebrow text-amber-soft">
+            Start here
+          </p>
+          <h2 class="mt-4 text-4xl text-paper">
+            Bring us your worst set of records.
+          </h2>
+          <p class="mt-6 max-w-prose text-lg text-paper/70">
+            A first consultation is an hour with a partner, at no charge, and
+            you leave with a written scope and a fixed price — whether or not
+            you engage us.
+          </p>
+        </div>
+
+        <div class="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4 lg:col-span-4 lg:col-start-9 lg:mt-0 lg:justify-end">
+          <Button href="/contact" variant="on-ink">Book a consultation</Button>
+          <a href="tel:+442071234567" class="cta-link nums text-sm">
+            +44 20 7123 4567
+          </a>
+        </div>
+      </div>
+    </ScrollReveal>
+  </section>
+</BaseLayout>
+
+<style>
+  /* The prose-link underline is tuned for ink on paper; on the navy band it
+     needs to invert along with the text. */
+  .cta-link {
+    color: rgb(246 243 236 / 0.7);
+    text-decoration-color: rgb(246 243 236 / 0.35);
+  }
+
+  .cta-link:hover {
+    color: #f6f3ec; /* paper */
+    text-decoration-color: #e4a579; /* amber-soft */
+  }
+
+  /* amber-deep, the global focus colour, is barely visible on ink. `:global`
+     because the CTA is rendered by Button.astro — Astro's scope attribute only
+     lands on elements written in this file, so a scoped selector would miss it. */
+  .cta-band :global(:focus-visible) {
+    outline-color: #e4a579;
+  }
+</style>

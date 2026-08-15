@@ -1,0 +1,427 @@
+---
+import type { Milestone } from '../data/history';
+
+interface Props {
+  milestones: Milestone[];
+  /** The terminal node under the last milestone — the firm as it stands today. */
+  cap: {
+    label: string;
+    title: string;
+    body: string;
+  };
+  class?: string;
+}
+
+const { milestones, cap, class: className }: Props = Astro.props;
+
+/**
+ * The alternation is computed here rather than in CSS.
+ *
+ * `:nth-child(even)` would work for the layout, but the entrance animation also
+ * needs to know which way an item travels, and reading the side off a data
+ * attribute keeps one source of truth for both. It also means the cap picks up
+ * whichever side the last milestone did not take, however many milestones the
+ * array ends up holding.
+ */
+const sideAt = (index: number): 'left' | 'right' =>
+  index % 2 === 0 ? 'left' : 'right';
+const capSide = sideAt(milestones.length);
+---
+
+{/*
+  The timeline is an <ol> because the order is the meaning — read it out of
+  sequence and it is just a list of facts about an accountancy firm. The rail
+  and the markers are decoration and are hidden from the accessibility tree;
+  what a screen reader gets is a numbered list of years, headings and figures.
+*/}
+<div class:list={['tl', className]} data-timeline>
+  {/* The rail is positioned against the track, not against the whole
+      component, so it ends where the list ends — which is exactly where the
+      cap's marker sits. A rail that ran on past the last node would read as an
+      unfinished line rather than as a closed account. */}
+  <div class="tl-track" data-timeline-track>
+    <div class="tl-rail" aria-hidden="true">
+      <span class="tl-rail__progress" data-timeline-progress></span>
+    </div>
+
+    <ol class="tl-list">
+      {
+        milestones.map((milestone, index) => (
+          <li class="tl-item" data-timeline-item data-side={sideAt(index)}>
+            <span class="tl-marker" aria-hidden="true" data-timeline-marker />
+
+            <p
+              class="tl-year nums font-display text-2xl tracking-display"
+              data-timeline-part
+            >
+              <time datetime={milestone.datetime}>{milestone.year}</time>
+            </p>
+
+            <div class="tl-entry" data-timeline-part>
+              <h3 class="text-xl">{milestone.title}</h3>
+
+              <p class="mt-4 text-ink-soft">{milestone.body}</p>
+
+              {/* Two figures per milestone, ruled like a statement line — the
+                  same treatment as the particulars column on /who-we-are, so
+                  the growth reads as bookkeeping, not as a stat badge. */}
+              <dl class="tl-stats">
+                {milestone.stats.map((stat) => (
+                  <div class="tl-stat">
+                    <dt class="text-xs uppercase tracking-eyebrow text-ink-muted">
+                      {stat.label}
+                    </dt>
+                    <dd class="nums mt-1 font-display text-lg text-ink">
+                      {stat.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+
+  {/* The terminus. Outside the list because it is not a milestone — it is the
+      balance carried down, and the rail stops dead at its marker. */}
+  <div class="tl-cap" data-timeline-item data-side={capSide}>
+    <span class="tl-marker tl-marker--cap" aria-hidden="true" data-timeline-marker />
+
+    <p class="tl-year tl-year--cap eyebrow" data-timeline-part>{cap.label}</p>
+
+    <div class="tl-entry" data-timeline-part>
+      <h3 class="text-2xl">{cap.title}</h3>
+      <p class="mt-4 text-ink-soft">{cap.body}</p>
+      <div class="rule-double mt-8"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /*
+    Colours are written as literals here for the reason set out at the top of
+    global.css: tokens reach Tailwind through `@config`, which does not publish
+    them as `--color-*` custom properties, so `theme()` and `var()` are both
+    unavailable in raw CSS. Anything that could be a utility is one, in the
+    markup above; what is left is geometry the utility layer cannot express.
+      ink        #12203A
+      paper      #F6F3EC
+      amber      #C4682B
+      amber-deep #9E5220
+  */
+
+  .tl {
+    /* Where the rail sits, and how far down an item its node sits. Both the
+       rail and the markers read these, so the line always starts at the centre
+       of the first marker rather than a few pixels above it. */
+    --tl-rail-x: 0.375rem;
+    --tl-marker-y: 0.6rem;
+    --tl-gap: 5rem;
+  }
+
+  /* The rail's containing block. Its bottom edge is the end of the line. */
+  .tl-track {
+    position: relative;
+  }
+
+  .tl-rail {
+    position: absolute;
+    left: var(--tl-rail-x);
+    /* Starts at the first marker's centre, not at the top of the text. */
+    top: var(--tl-marker-y);
+    bottom: 0;
+    width: 1px;
+    margin-left: -0.5px;
+    background: rgb(18 32 58 / 0.15);
+  }
+
+  /* The scrubbed fill. A child rather than a transform on .tl-rail itself:
+     GSAP writes the whole `transform` property, which would clobber the
+     half-pixel centring above. */
+  .tl-rail__progress {
+    position: absolute;
+    inset: 0;
+    transform-origin: top center;
+    /* Flat amber, not a ramp. The palette is blocked, not graded — and a
+       gradient down a 1px rail only reads as a rail that failed to load. */
+    background: #c4682b;
+  }
+
+  .tl-list {
+    /* The global `ul, ol` rules give lists a marker and an indent; a timeline
+       numbers itself. */
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+  }
+
+  .tl-item,
+  .tl-cap {
+    position: relative;
+    display: grid;
+    padding-left: calc(var(--tl-rail-x) + 1.75rem);
+  }
+
+  .tl-item + .tl-item {
+    margin-top: var(--tl-gap);
+  }
+
+  /* The rail runs to the bottom of the track, so the last milestone has to hold
+     the gap open itself — a margin on the cap would leave the line short of
+     the node it is meant to end at. */
+  .tl-list > .tl-item:last-child {
+    padding-bottom: var(--tl-gap);
+  }
+
+  .tl-marker {
+    position: absolute;
+    left: var(--tl-rail-x);
+    top: var(--tl-marker-y);
+    width: 11px;
+    height: 11px;
+    margin: -5.5px 0 0 -5.5px;
+    border-radius: 9999px;
+    background: #f6f3ec;
+    box-shadow: inset 0 0 0 1px rgb(18 32 58 / 0.3);
+  }
+
+  .tl-marker::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 9999px;
+    background: #c4682b;
+  }
+
+  /* Filled, and a size up: the line ends here. */
+  .tl-marker--cap {
+    width: 15px;
+    height: 15px;
+    margin: -7.5px 0 0 -7.5px;
+    background: #9e5220;
+    box-shadow: none;
+  }
+
+  .tl-marker--cap::after {
+    inset: 4px;
+    background: #f6f3ec;
+  }
+
+  /* The cap's marker sits on the seam between the <ol> and this block, which is
+     exactly where the rail stops. */
+  .tl-cap .tl-marker {
+    top: 0;
+  }
+
+  /*
+    Family, size and tracking come from utilities in the markup; what is left
+    here is the optical-size axis the base layer only applies to h1–h4, and a
+    weight of ink that keeps the numerals subordinate to the headings they sit
+    opposite. The cap's label is an eyebrow, so it takes none of this.
+  */
+  .tl-year:not(.tl-year--cap) {
+    font-variation-settings: 'opsz' 96, 'SOFT' 0, 'WONK' 1;
+    line-height: 1.1;
+    /* 55% ink, not 45%. The numerals have to stay subordinate to the headings
+       opposite them, but 45% measured 2.75:1 on paper — under the 3:1 floor
+       that applies at this size. 55% is 3.6:1 and still visibly lighter than
+       the ink around it. */
+    color: rgb(18 32 58 / 0.55);
+  }
+
+  /* Nudged down onto the marker's line — an uppercase 13px label has a much
+     lower cap height than the 2xl numerals on the other milestones. */
+  .tl-year--cap {
+    padding-top: 0.35rem;
+  }
+
+  .tl-entry {
+    max-width: 34rem;
+    margin-top: 0.75rem;
+  }
+
+  .tl-stats {
+    display: flex;
+    gap: 2.5rem;
+    margin: 1.5rem 0 0;
+    border-top: 1px solid rgb(18 32 58 / 0.15);
+    padding-top: 0.875rem;
+  }
+
+  .tl-stat {
+    min-width: 4.5rem;
+  }
+
+  /* -------------------------------------------------------------------------
+     lg and up: the rail moves to the centre and the entries alternate across
+     it. The year always hangs on the opposite side from its entry, so the two
+     columns of numerals read down the page against the line.
+  ------------------------------------------------------------------------- */
+  @media (min-width: 1024px) {
+    .tl {
+      --tl-rail-x: 50%;
+      /* Cap-height alignment: the node, the year and the entry's heading all
+         sit on one line once the year is set at 2xl. */
+      --tl-marker-y: 0.85rem;
+      --tl-gap: 7rem;
+    }
+
+    .tl-item,
+    .tl-cap {
+      padding-left: 0;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 5rem;
+      align-items: start;
+    }
+
+    .tl-item > .tl-year,
+    .tl-cap > .tl-year,
+    .tl-item > .tl-entry,
+    .tl-cap > .tl-entry {
+      grid-row: 1;
+    }
+
+    /* Both halves hug the rail from their own side — the gutter between them
+       is the column gap, and nothing floats out at the page edges. */
+    .tl-item[data-side='left'] > .tl-entry,
+    .tl-cap[data-side='left'] > .tl-entry {
+      grid-column: 1;
+      justify-self: end;
+    }
+
+    .tl-item[data-side='left'] > .tl-year,
+    .tl-cap[data-side='left'] > .tl-year {
+      grid-column: 2;
+      justify-self: start;
+    }
+
+    .tl-item[data-side='right'] > .tl-year,
+    .tl-cap[data-side='right'] > .tl-year {
+      grid-column: 1;
+      justify-self: end;
+      text-align: right;
+    }
+
+    .tl-item[data-side='right'] > .tl-entry,
+    .tl-cap[data-side='right'] > .tl-entry {
+      grid-column: 2;
+      justify-self: start;
+    }
+
+    .tl-entry {
+      margin-top: 0;
+    }
+  }
+</style>
+
+<script>
+  import { gsap } from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  /*
+    The second GSAP entry point in the project, after ScrollReveal. It is here
+    rather than folded into that component because a timeline needs two things
+    a generic reveal does not: a direction that depends on which side of the
+    rail an item landed on, and a scrubbed fill tied to scroll position rather
+    than a one-shot trigger. Astro still bundles GSAP once per page, however
+    many components on it import the library.
+  */
+  const mm = gsap.matchMedia();
+
+  // Travel distance stays inside the brief's 8–12px range, on both axes.
+  const TRAVEL = 12;
+
+  /**
+   * Registered twice, so the horizontal offset only exists where the layout is
+   * actually alternating. Below lg every item sits in one column and coming in
+   * from the side would be a lie about where it lives. matchMedia reverts the
+   * wrong branch on resize, tweens and ScrollTriggers included.
+   */
+  const build = (alternating: boolean) => () => {
+    document
+      .querySelectorAll<HTMLElement>('[data-timeline]')
+      .forEach((timeline) => {
+        const progress = timeline.querySelector<HTMLElement>(
+          '[data-timeline-progress]',
+        );
+
+        // The fill tracks the reader down the page. `scrub` smooths it over
+        // 0.4s so a flicked scroll wheel does not snap the line to the bottom.
+        // Triggered on the track rather than the whole component, so the fill
+        // completes as the last node reaches the reader — not a screenful later
+        // when the terminal copy has finished scrolling past.
+        const track = timeline.querySelector<HTMLElement>('[data-timeline-track]');
+
+        if (progress && track) {
+          gsap.fromTo(
+            progress,
+            { scaleY: 0 },
+            {
+              scaleY: 1,
+              ease: 'none',
+              scrollTrigger: {
+                trigger: track,
+                start: 'top 70%',
+                end: 'bottom 65%',
+                scrub: 0.4,
+              },
+            },
+          );
+        }
+
+        timeline
+          .querySelectorAll<HTMLElement>('[data-timeline-item]')
+          .forEach((item) => {
+            const marker = item.querySelector('[data-timeline-marker]');
+            const parts = item.querySelectorAll('[data-timeline-part]');
+            const fromX = alternating
+              ? item.dataset.side === 'left'
+                ? -TRAVEL
+                : TRAVEL
+              : 0;
+
+            // One timeline per item so the marker leads and the copy follows
+            // it out — the node lands on the line first, then the entry
+            // arrives beside it.
+            const reveal = gsap.timeline({
+              scrollTrigger: { trigger: item, start: 'top 85%', once: true },
+            });
+
+            reveal
+              .fromTo(
+                marker,
+                { opacity: 0, scale: 0.2 },
+                { opacity: 1, scale: 1, duration: 0.45, ease: 'back.out(2)' },
+              )
+              .fromTo(
+                parts,
+                { opacity: 0, x: fromX, y: 10 },
+                {
+                  opacity: 1,
+                  x: 0,
+                  y: 0,
+                  duration: 0.7,
+                  ease: 'power2.out',
+                  stagger: 0.08,
+                },
+                '-=0.25',
+              );
+          });
+      });
+
+    // Self-hosted fonts are font-display: swap, so the page reflows once they
+    // land — after ScrollTrigger has measured every start position. Same
+    // refresh as ScrollReveal; running it twice is harmless.
+    document.fonts?.ready.then(() => ScrollTrigger.refresh());
+  };
+
+  // Only the no-preference branches are ever registered. Under reduced motion
+  // nothing is created and nothing tweens — the rules in global.css have
+  // already shown every item and filled the rail.
+  mm.add('(prefers-reduced-motion: no-preference) and (min-width: 1024px)', build(true));
+  mm.add('(prefers-reduced-motion: no-preference) and (max-width: 1023.98px)', build(false));
+</script>

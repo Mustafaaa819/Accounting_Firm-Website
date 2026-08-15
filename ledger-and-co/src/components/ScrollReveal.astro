@@ -1,0 +1,89 @@
+---
+interface Props {
+  /** Travel distance in px. The brief's range is 8–12; 10 is the default. */
+  y?: number;
+  /** Seconds to wait once the trigger fires. */
+  delay?: number;
+  /** When > 0, direct children animate in sequence this many seconds apart. */
+  stagger?: number;
+  as?: keyof HTMLElementTagNameMap;
+  class?: string;
+}
+
+const {
+  y = 10,
+  delay = 0,
+  stagger = 0,
+  as = 'div',
+  class: className,
+}: Props = Astro.props;
+
+const Tag = as;
+---
+
+<Tag
+  class={className}
+  data-reveal
+  data-reveal-delay={delay > 0 ? delay : undefined}
+  data-reveal-stagger={stagger > 0 ? stagger : undefined}
+  style={`--reveal-y: ${y}px`}
+>
+  <slot />
+</Tag>
+
+<script>
+  import { gsap } from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  // One of the project's two GSAP entry points — HistoryTimeline has its own,
+  // for the scrubbed rail and the side-dependent travel a generic reveal
+  // cannot express. Astro bundles a component <script> once per page and only
+  // for pages that actually render the component, so GSAP never ships to a page
+  // without an animation on it — however many instances that page contains.
+  const mm = gsap.matchMedia();
+
+  // Only the no-preference branch is ever registered. Under reduced motion
+  // nothing is created, nothing tweens, and the matching rule in global.css has
+  // already shown the content — the animation is disabled, not just shortened.
+  mm.add('(prefers-reduced-motion: no-preference)', () => {
+    const wrappers = document.querySelectorAll<HTMLElement>('[data-reveal]');
+
+    wrappers.forEach((wrapper) => {
+      const stagger = Number(wrapper.dataset.revealStagger ?? 0);
+      const delay = Number(wrapper.dataset.revealDelay ?? 0);
+      const y =
+        Number.parseFloat(
+          getComputedStyle(wrapper).getPropertyValue('--reveal-y'),
+        ) || 10;
+
+      // Staggered wrappers hand their children to GSAP; the CSS hides the same
+      // set, so the two always agree on what starts invisible.
+      const targets = stagger > 0 ? Array.from(wrapper.children) : wrapper;
+
+      gsap.fromTo(
+        targets,
+        { opacity: 0, y },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.7,
+          ease: 'power2.out',
+          delay,
+          stagger,
+          scrollTrigger: {
+            trigger: wrapper,
+            start: 'top 88%',
+            once: true,
+          },
+        },
+      );
+    });
+
+    // The fonts are self-hosted with font-display: swap, so text reflows once
+    // they land — after ScrollTrigger has already measured every start position.
+    // Without this refresh, reveals below the fold fire at stale offsets.
+    document.fonts?.ready.then(() => ScrollTrigger.refresh());
+  });
+</script>

@@ -1,0 +1,359 @@
+@import 'tailwindcss';
+
+/* Tailwind v4 is CSS-first by default; this pulls the tokens back into a single
+   JS config file so colours/type live in one reviewable place. */
+@config '../../tailwind.config.ts';
+
+/* ---------------------------------------------------------------------------
+   Self-hosted variable fonts (public/fonts, served from /fonts at runtime).
+
+   Both families are variable, so one file per subset covers the whole weight
+   range — Fraunces 300–700 (with an optical-size axis) and Inter 100–900.
+   The latin files are preloaded in BaseLayout; latin-ext is left to load on
+   demand via unicode-range, which is why it must NOT be preloaded.
+--------------------------------------------------------------------------- */
+
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('/fonts/fraunces-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('/fonts/fraunces-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ---------------------------------------------------------------------------
+   NOTE ON COLOUR IN RAW CSS
+
+   Tokens reach Tailwind through `@config`, which does NOT publish them as
+   `--color-*` custom properties (the generated :root only carries spacing,
+   container, radius and transition vars). So `theme(colors.ink)` and
+   `var(--color-ink)` are both unavailable here — every colour below goes
+   through `@apply` instead, which keeps tailwind.config.ts the single source
+   of truth. Opacity modifiers like `ink/15` do work and compile to oklab().
+--------------------------------------------------------------------------- */
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+
+    /* SiteHeader is sticky, so an anchor jump would otherwise park its target
+       underneath the bar. --header-h is measured and kept current by that
+       component; the fallback covers the moment before its script runs. */
+    scroll-padding-block-start: calc(var(--header-h, 5rem) + 1rem);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  body {
+    @apply bg-paper font-sans text-base text-ink antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    /* Fraunces' optical-size axis: larger opsz values thin the strokes and
+       tighten the serifs, which is what we want at headline sizes. */
+    @apply font-display tracking-display text-ink;
+    font-variation-settings: 'opsz' 96, 'SOFT' 0, 'WONK' 1;
+  }
+
+  h5,
+  h6 {
+    @apply font-sans text-sm font-semibold uppercase tracking-eyebrow text-ink-soft;
+  }
+
+  /* One focus treatment for everything. `outline` rather than `ring` so it is
+     never clipped by an ancestor's overflow, and offset so it reads clearly
+     against both paper and the amber button fill. */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-amber-deep;
+  }
+
+  /* Links in flowing prose. Anything structural (nav, cards, buttons) opts out
+     with `no-underline` rather than fighting a more specific selector here. */
+  a {
+    @apply text-ink underline decoration-ink/30 underline-offset-4 transition-colors;
+  }
+
+  a:hover {
+    @apply text-amber-deep decoration-amber;
+  }
+
+  hr {
+    @apply my-12 border-0 border-t border-ink/15;
+  }
+
+  ul,
+  ol {
+    @apply pl-5;
+  }
+
+  ul {
+    @apply list-disc marker:text-amber;
+  }
+
+  ol {
+    @apply list-decimal marker:text-ink-muted marker:tabular-nums;
+  }
+
+  small {
+    @apply text-sm text-ink-muted;
+  }
+
+  figcaption {
+    @apply mt-3 text-xs text-ink-muted;
+  }
+
+  code {
+    @apply rounded-[2px] bg-ink/5 px-1.5 py-0.5 text-[0.9em];
+  }
+
+  /* Pull-quote, deliberately upright. Only the normal styles of Fraunces and
+     Inter are self-hosted, so `font-style: italic` would fall through to the
+     browser's faux-oblique — a skew of an upright high-contrast serif, which
+     looks broken. The amber rule carries the emphasis instead. */
+  blockquote {
+    @apply my-10 border-l-2 border-amber pl-6 font-display text-xl text-ink;
+    font-variation-settings: 'opsz' 48, 'SOFT' 0, 'WONK' 0;
+  }
+
+  blockquote cite {
+    @apply mt-4 block font-sans text-xs font-medium uppercase not-italic tracking-eyebrow text-ink-muted;
+  }
+
+  ::selection {
+    @apply bg-amber-soft text-ink;
+  }
+
+  /* -------------------------------------------------------------------------
+     Forms
+  ------------------------------------------------------------------------- */
+
+  label {
+    @apply mb-2 block text-sm font-medium text-ink-soft;
+  }
+
+  /* Checkboxes, radios and file inputs are excluded — they need the native
+     control, not the text-field box. */
+  input:not([type='checkbox']):not([type='radio']):not([type='file']),
+  textarea,
+  select {
+    @apply w-full rounded-[2px] bg-paper-bright px-4 py-3 text-base text-ink
+      ring-1 ring-ink/15 transition-shadow;
+  }
+
+  input:not([type='checkbox']):not([type='radio']):not([type='file']):focus,
+  textarea:focus,
+  select:focus {
+    @apply outline-none ring-2 ring-amber-deep;
+  }
+
+  textarea {
+    @apply min-h-32 resize-y;
+  }
+
+  ::placeholder {
+    @apply text-ink-muted;
+  }
+
+  input[type='checkbox'],
+  input[type='radio'] {
+    @apply size-4 accent-amber-deep;
+  }
+
+  :disabled {
+    @apply cursor-not-allowed opacity-60;
+  }
+
+  [aria-invalid='true'] {
+    @apply ring-2 ring-amber-deep;
+  }
+
+  fieldset {
+    @apply border-0 p-0;
+  }
+
+  legend {
+    @apply mb-4 font-display text-lg text-ink;
+  }
+}
+
+@layer components {
+  /* -------------------------------------------------------------------------
+     Buttons — defined as classes, not only as Button.astro, so they stay
+     usable from Markdown and any future CMS-authored content.
+  ------------------------------------------------------------------------- */
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-[2px] px-6 py-3
+      text-sm font-medium no-underline transition-colors duration-200;
+  }
+
+  /* Fills with amber-deep rather than the brand amber: paper-bright on #C4682B
+     is 3.94:1, under the 4.5:1 AA floor for text this size. #9E5220 is 5.65:1.
+     Hovering to ink keeps both states well clear of the floor. */
+  .btn--primary {
+    @apply bg-amber-deep text-paper-bright;
+  }
+
+  .btn--primary:hover {
+    @apply bg-ink text-paper-bright;
+  }
+
+  /* For the ink bands — the closing CTA and the footer. amber-deep is tuned for
+     paper and all but vanishes on #12203A, so the fill flips to amber-soft with
+     ink text: 7.7:1 against the band it sits on, 8.9:1 for the label on the
+     fill. Hovering to paper keeps both well clear. */
+  .btn--on-ink {
+    @apply bg-amber-soft text-ink;
+  }
+
+  .btn--on-ink:hover {
+    @apply bg-paper text-ink;
+  }
+
+  .btn--ghost {
+    @apply text-ink ring-1 ring-inset ring-ink/25;
+  }
+
+  .btn--ghost:hover {
+    @apply bg-ink/5 text-ink ring-ink;
+  }
+
+  /* -------------------------------------------------------------------------
+     The double rule — an accountant underlines a final total with two
+     hairlines to mark it closed and checked. Used once per section, as the
+     terminator, and nowhere else.
+  ------------------------------------------------------------------------- */
+
+  .rule-double {
+    @apply relative h-0 border-t border-ink/25;
+  }
+
+  .rule-double::after {
+    content: '';
+    @apply absolute inset-x-0 top-0.5 border-t border-ink/25;
+  }
+
+  /* Figures line up in columns and share a single digit width, the way they do
+     on a printed statement. */
+  .nums {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  .eyebrow {
+    /* amber-deep, not amber: at this size the brand amber is 3.55:1 on paper. */
+    @apply text-xs font-medium uppercase tracking-eyebrow text-amber-deep;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   ScrollReveal initial states.
+
+   Deliberately left OUT of a @layer: unlayered rules outrank everything in
+   @layer, so a stray `opacity-100` utility can't defeat the hidden state.
+
+   Every branch here is a failure mode:
+   - no `html.js`  -> JS never ran (disabled, blocked, errored). Content stays
+                      visible, because hiding it would make the page unreadable.
+   - reduced motion -> shown unconditionally with !important, which beats the
+                      inline styles GSAP would otherwise write.
+   - otherwise      -> hidden, and ScrollReveal.astro animates it in.
+--------------------------------------------------------------------------- */
+
+html.js [data-reveal]:not([data-reveal-stagger]) {
+  opacity: 0;
+  transform: translateY(var(--reveal-y, 10px));
+}
+
+html.js [data-reveal-stagger] > * {
+  opacity: 0;
+  transform: translateY(var(--reveal-y, 10px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.js [data-reveal],
+  html.js [data-reveal-stagger] > * {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   HistoryTimeline initial states.
+
+   Same three branches as above, and here for the same reason: these rules have
+   to sit outside every @layer, and they have to be readable next to the
+   ScrollReveal set they mirror. The component's own <style> block is scoped, so
+   it could not reach `html.js` anyway.
+
+   The marker and the two parts of an entry are hidden individually rather than
+   as a block, because the entrance animates them separately. The rail's fill
+   is the exception: it is scaled, not faded, so its resting state is scaleY(0)
+   and its shown state has to be scaleY(1) — `transform: none` would leave a
+   full-height amber line with no animation to have earned it.
+--------------------------------------------------------------------------- */
+
+html.js [data-timeline-item] [data-timeline-marker],
+html.js [data-timeline-item] [data-timeline-part] {
+  opacity: 0;
+}
+
+html.js [data-timeline-progress] {
+  transform: scaleY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.js [data-timeline-item] [data-timeline-marker],
+  html.js [data-timeline-item] [data-timeline-part] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  html.js [data-timeline-progress] {
+    transform: scaleY(1) !important;
+  }
+}
