@@ -1,0 +1,97 @@
+---
+import { Image } from 'astro:assets';
+
+interface Props {
+  /**
+   * The real photograph — an ESM import, or the value of a collection field
+   * declared with `image()`. Omit it and the component renders the placeholder
+   * block instead, which is the state the whole site is in until the shoot is
+   * delivered.
+   */
+  src?: ImageMetadata;
+  /**
+   * What the photograph should show. Written for whoever commissions the shoot,
+   * not for the visitor — it is printed inside the placeholder block, which has
+   * to be obviously unfinished at a glance or it ships.
+   */
+  label: string;
+  /** Alt text for the real image. Falls back to `label`, so set it whenever the label reads as a brief rather than a description. */
+  alt?: string;
+  /** The crop the layout is built around. The real image is cropped to it. */
+  width: number;
+  height: number;
+  /** `ink` for placement on the navy bands, where the paper fill would glare. */
+  tone?: 'paper' | 'ink';
+  /**
+   * `eager` for the one image above the fold on a given page — currently the
+   * homepage hero and nothing else. Everything below it stays lazy, which is
+   * the default here rather than something each call site has to remember.
+   */
+  loading?: 'lazy' | 'eager';
+  class?: string;
+}
+
+const {
+  src,
+  label,
+  alt,
+  width,
+  height,
+  tone = 'paper',
+  loading = 'lazy',
+  class: className,
+} = Astro.props;
+---
+
+{
+  src ? (
+    /*
+      Astro's <Image /> rather than a raw <img>: it hashes the file into
+      /_astro, emits a srcset from the global `layout: 'constrained'` set in
+      astro.config.mjs, and writes width/height so the space is reserved before
+      the bytes land. `fetchpriority` is only meaningful on the eager one — on a
+      lazy image it is noise, so it is omitted rather than set to "auto".
+    */
+    <Image
+      src={src}
+      alt={alt ?? label}
+      width={width}
+      height={height}
+      loading={loading}
+      decoding={loading === 'eager' ? 'sync' : 'async'}
+      fetchpriority={loading === 'eager' ? 'high' : undefined}
+      class:list={['w-full', className]}
+    />
+  ) : (
+    /*
+      A flat fill holding the space the photograph will take, at the aspect
+      ratio it will have — so dropping the real image in changes the picture,
+      not the layout. Deliberately not a grey stock-photo silhouette.
+
+      `role="img"` with a name, rather than three loose lines of text. Without
+      it a screen reader reads the block as ordinary prose — "Photography to
+      come, Headshot — Amara Oyelaran…, 720 × 900" — dropped mid-page with
+      nothing to say it is a picture. With it, the block is announced once, as
+      an image; the children go presentational, so the dimensions stop being
+      read out.
+    */
+    <div
+      role="img"
+      aria-label={`Placeholder image. ${label}`}
+      class:list={[
+        'flex flex-col items-center justify-center gap-2 overflow-hidden p-6 text-center',
+        tone === 'ink'
+          ? 'bg-ink-soft text-paper/70 ring-1 ring-inset ring-paper/20'
+          : 'bg-paper-warm text-ink-muted ring-1 ring-inset ring-ink/15',
+        className,
+      ]}
+      style={`aspect-ratio: ${width} / ${height}`}
+    >
+      <p class="text-xs uppercase tracking-eyebrow">Photography to come</p>
+      <p class="max-w-[26ch] text-sm">{label}</p>
+      <p class="nums text-xs">
+        {width} &times; {height}
+      </p>
+    </div>
+  )
+}

@@ -5,7 +5,7 @@ import Button from '../components/Button.astro';
 import ScrollReveal from '../components/ScrollReveal.astro';
 import LedgerSpread from '../components/LedgerSpread.astro';
 import DenseTextSection from '../components/DenseTextSection.astro';
-import PlaceholderImage from '../components/PlaceholderImage.astro';
+import Photo from '../components/Photo.astro';
 
 // The schema's editorial `order`, not filesystem order — so adding a service
 // file cannot silently reshuffle the list, and the homepage and /services show
@@ -34,7 +34,13 @@ const newsDate = new Intl.DateTimeFormat('en-GB', {
 });
 ---
 
-<BaseLayout title="Ledger & Co. — Chartered Accountants">
+{/* The default description in BaseLayout is the firm's one-liner; the homepage
+    gets its own, which has to carry the specific claim the hero makes rather
+    than the generic positioning. */}
+<BaseLayout
+  title="Ledger & Co. — Chartered Accountants"
+  description="Partner-led accounting, tax, audit and payroll for owner-managed businesses turning over £500k to £20m. Offices in London and Manchester; established 1998."
+>
   {/* ---------------------------------------------------------------------
       1. Hero.
 
@@ -68,10 +74,14 @@ const newsDate = new Intl.DateTimeFormat('en-GB', {
       </ScrollReveal>
 
       <ScrollReveal delay={0.15} class="mt-14 lg:col-span-4 lg:col-start-9 lg:mt-24">
-        <PlaceholderImage
+        {/* The only eager image on the site — it is the one thing above the
+            fold on lg and up. Everything below this point stays lazy. */}
+        <Photo
           label="The partners' floor — desks, files, daylight. Shot on location, not stock."
+          alt="The partners' floor at Ledger & Co."
           width={640}
           height={800}
+          loading="eager"
         />
         <p class="mt-4 text-xs text-ink-muted">
           Portrait crop, above the fold on lg and up.
@@ -187,10 +197,12 @@ const newsDate = new Intl.DateTimeFormat('en-GB', {
         >
           {partners.map((partner) => (
             <li>
-              {/* `partner.data.photo` already holds the headshot path — swap the
-                  placeholder for an <img> once the shoot is delivered. */}
-              <PlaceholderImage
+              {/* Renders the real headshot the moment `photo:` is added to the
+                  Markdown file; the placeholder brief until then. */}
+              <Photo
+                src={partner.data.photo}
                 label={`Headshot — ${partner.data.name}`}
+                alt={`${partner.data.name}, ${partner.data.role}`}
                 width={600}
                 height={750}
               />

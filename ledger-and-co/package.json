@@ -10,7 +10,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "astro": "astro"
+    "astro": "astro",
+    "og": "node scripts/build-og-image.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",

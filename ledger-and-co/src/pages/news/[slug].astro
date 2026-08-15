@@ -48,7 +48,12 @@ const related = others
   .slice(0, 3);
 ---
 
-<BaseLayout title={`${title} — Ledger & Co.`} description={excerpt}>
+<BaseLayout
+  title={`${title} — Ledger & Co.`}
+  description={excerpt}
+  ogType="article"
+  publishedTime={date.toISOString()}
+>
   <article>
     {/* -------------------------------------------------------------------
         1. Head.

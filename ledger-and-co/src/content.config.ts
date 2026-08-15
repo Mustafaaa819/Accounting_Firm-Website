@@ -40,7 +40,10 @@ const services = defineCollection({
 
 const team = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/team' }),
-  schema: z.object({
+  // The schema is a function so it can reach `image()`, which is what turns a
+  // frontmatter path into an ImageMetadata the <Image /> pipeline can hash,
+  // resize and emit a srcset for. A plain string path would skip all of that.
+  schema: ({ image }) => z.object({
     name: z.string(),
     role: z.string(),
     // Seniority, and with it the layout. The glob loader reads files in
@@ -49,9 +52,19 @@ const team = defineCollection({
     // it is a bench, not an index. Same reasoning as `services.order`.
     order: z.number(),
     bio: z.string(),
-    // Path under /public. Swap to `image()` from the schema context once the
-    // headshots live in src/assets and should go through Astro's image pipeline.
-    photo: z.string(),
+    /**
+     * The headshot, resolved through Astro's image pipeline.
+     *
+     * Optional because the shoot has not happened — every entry currently omits
+     * it and Photo.astro renders the placeholder brief instead. To ship a real
+     * one: drop the file next to the Markdown in src/content/team/ and add
+     *
+     *   photo: ./amara-oyelaran.jpg
+     *
+     * Nothing else changes. `image()` validates that the file exists at build
+     * time, so a typo here is a failed build rather than a broken portrait.
+     */
+    photo: image().optional(),
   }),
 });
 

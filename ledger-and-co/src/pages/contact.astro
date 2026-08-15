@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ScrollReveal from '../components/ScrollReveal.astro';
-import PlaceholderImage from '../components/PlaceholderImage.astro';
+import Photo from '../components/Photo.astro';
 import { offices, headOffice, GENERAL_EMAIL } from '../data/offices';
 import { CLIENT_LOGIN_URL } from '../data/nav';
 import {
@@ -467,7 +467,7 @@ const afterwards = [
       {
         offices.map((office) => (
           <li>
-            <PlaceholderImage
+            <Photo
               label={`Map — ${office.city}, ${office.lines[0]}. Static image, no third-party embed.`}
               width={800}
               height={600}

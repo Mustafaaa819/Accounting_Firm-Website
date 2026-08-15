@@ -1,8 +1,10 @@
 ---
+import { Image } from 'astro:assets';
 import ScrollReveal from './ScrollReveal.astro';
 
 interface Props {
-  image: string;
+  /** An imported image, not a /public path — this goes through <Image />. */
+  image: ImageMetadata;
   alt: string;
   eyebrow?: string;
   title: string;
@@ -25,9 +27,13 @@ const hasActions = Astro.slots.has('actions');
 <section class:list={['relative', className]}>
   <div class="lg:grid lg:grid-cols-2 lg:items-center">
     <div class:list={[flip && 'lg:order-2']}>
-      <img
+      {/* Lazy without exception: this section is full-bleed and always sits
+          below a page head, so it has never been the LCP element. */}
+      <Image
         src={image}
         alt={alt}
+        widths={[640, 1024, 1600, 2048]}
+        sizes="(min-width: 1024px) 50vw, 100vw"
         loading="lazy"
         decoding="async"
         class="h-64 w-full object-cover sm:h-80 lg:h-[34rem]"

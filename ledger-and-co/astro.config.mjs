@@ -11,6 +11,15 @@ export default defineConfig({
   // sitemap integration refuses to emit anything without it.
   site: 'https://ledgerandco.example',
 
+  image: {
+    // Makes every <Image /> responsive by default: Astro emits a srcset and a
+    // sizes attribute, and writes intrinsic width/height so the space is
+    // reserved before the file arrives. Set here rather than per call site so a
+    // new image cannot be added without it.
+    layout: 'constrained',
+    objectFit: 'cover',
+  },
+
   integrations: [
     // Every route here is a public marketing page, so nothing is filtered out.
     // If a page ever ships with `noindex` on BaseLayout, add a `filter` here to

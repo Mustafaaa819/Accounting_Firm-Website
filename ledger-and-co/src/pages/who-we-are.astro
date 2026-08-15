@@ -3,7 +3,7 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Button from '../components/Button.astro';
 import ScrollReveal from '../components/ScrollReveal.astro';
-import PlaceholderImage from '../components/PlaceholderImage.astro';
+import Photo from '../components/Photo.astro';
 
 // Seniority, from the schema's `order`. Filename order would put whoever joined
 // most recently at the top and hand them the lead slot below.
@@ -195,8 +195,10 @@ const figures = [
               tall and fills the whole tablet screen on its own. It only goes
               back to full column width once it has a text column beside it. */}
           <div class="sm:max-w-md lg:col-span-5 lg:max-w-none">
-            <PlaceholderImage
+            <Photo
+              src={lead.data.photo}
               label={`Headshot — ${lead.data.name}, ${lead.data.role}. Seated, desk, natural light.`}
+              alt={`${lead.data.name}, ${lead.data.role}`}
               width={720}
               height={900}
             />
@@ -226,11 +228,12 @@ const figures = [
 
             return (
               <li class:list={[slot.column, slot.offset]}>
-                {/* `member.data.photo` already holds the headshot path — swap
-                    this for an <img> once the shoot is delivered. The crop
-                    varies by slot, so the brief carries its own dimensions. */}
-                <PlaceholderImage
+                {/* The crop varies by slot, so the brief carries its own
+                    dimensions — and the real image is cropped to the same. */}
+                <Photo
+                  src={member.data.photo}
                   label={`Headshot — ${member.data.name}, ${member.data.role}`}
+                  alt={`${member.data.name}, ${member.data.role}`}
                   width={slot.width}
                   height={slot.height}
                 />

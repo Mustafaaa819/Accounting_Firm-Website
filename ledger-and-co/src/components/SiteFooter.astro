@@ -22,8 +22,11 @@ const legal = [
 ---
 
 {/*
-  The dark band. This is the only ink-ground surface on the site, which is what
-  makes it read as the end of the page rather than another section.
+  The dark band that ends every page.
+
+  `mt-24` is for the pages that finish on paper. Where a page finishes on its
+  own ink CTA band instead, global.css collapses that margin to zero so the two
+  navy surfaces meet — see the `:has()` rule there.
 */}
 <footer data-site-footer class="mt-24 bg-ink text-paper">
   <div class="mx-auto max-w-6xl px-6 py-16 sm:py-20">

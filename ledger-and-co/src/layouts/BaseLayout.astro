@@ -8,17 +8,32 @@ interface Props {
   description?: string;
   /** Social share image, resolved against `site`. Replace the placeholder before launch. */
   image?: string;
+  /** Describes the share card for anyone who cannot see it. Change with `image`. */
+  imageAlt?: string;
+  /** `article` on a dated piece of writing, `website` on everything else. */
+  ogType?: 'website' | 'article';
+  /** Publication date, ISO. Only read when `ogType` is `article`. */
+  publishedTime?: string;
   noindex?: boolean;
 }
 
 const {
   title,
   description = 'Ledger & Co. — chartered accountants for founders, funds and family businesses.',
-  image = '/images/og-default.svg',
+  image = '/images/og-default.png',
+  imageAlt = 'Ledger & Co., chartered accountants.',
+  ogType = 'website',
+  publishedTime,
   noindex = false,
 } = Astro.props;
 
 const SITE_NAME = 'Ledger & Co.';
+
+// The card's real pixel size. Facebook and LinkedIn reserve the slot from these
+// before the image itself arrives, so a wrong pair reflows the preview; keep
+// them in step with whatever `image` points at.
+const IMAGE_WIDTH = '1200';
+const IMAGE_HEIGHT = '630';
 
 // `Astro.site` comes from astro.config.mjs. Both are absolute, which og:url and
 // canonical require — relative URLs are ignored by most crawlers and scrapers.
@@ -43,16 +58,26 @@ const socialImage = new URL(image, Astro.site);
     <link rel="apple-touch-icon" href="/favicon.svg" />
     <meta name="theme-color" content="#12203A" />
 
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
+    {
+      ogType === 'article' && publishedTime && (
+        <meta property="article:published_time" content={publishedTime} />
+      )
+    }
     <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:locale" content="en_GB" />
     <meta property="og:url" content={canonical} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={socialImage} />
+    <meta property="og:image:width" content={IMAGE_WIDTH} />
+    <meta property="og:image:height" content={IMAGE_HEIGHT} />
+    <meta property="og:image:alt" content={imageAlt} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={socialImage} />
+    <meta name="twitter:image:alt" content={imageAlt} />
 
     <meta name="generator" content={Astro.generator} />
 

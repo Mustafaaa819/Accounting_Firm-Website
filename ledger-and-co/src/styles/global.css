@@ -291,6 +291,26 @@
 }
 
 /* ---------------------------------------------------------------------------
+   The ink band → ink footer seam.
+
+   SiteFooter carries `mt-24`, which is breathing room for the pages that end on
+   paper (/news, /services, /contact). On the five pages that close with an ink
+   CTA band it does something else: it lays a 6rem stripe of paper between two
+   navy surfaces, so the page ends on a bar that reads as a layout error rather
+   than as one block of colour. Flat colour blocking is the whole point of the
+   palette; a stray gutter through it is not a rhythm.
+
+   Unlayered, like the reveal states below, because `mt-24` is a utility and
+   utilities sit in a layer — a layered rule here would lose to it regardless of
+   specificity. Every closing band already carries `.cta-band` for its focus
+   colour, so there is nothing new to remember at the call site.
+--------------------------------------------------------------------------- */
+
+main:has(> .cta-band:last-child) + [data-site-footer] {
+  margin-top: 0;
+}
+
+/* ---------------------------------------------------------------------------
    ScrollReveal initial states.
 
    Deliberately left OUT of a @layer: unlayered rules outrank everything in

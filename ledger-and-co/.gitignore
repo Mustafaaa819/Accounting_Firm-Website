@@ -3,6 +3,8 @@ dist/
 
 # browser-qa working output (screenshots + reports, not a deliverable)
 qa-screenshots/
+qa-final/
+qa-verify/
 # generated types
 .astro/
 
